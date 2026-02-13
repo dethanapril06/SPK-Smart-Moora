@@ -1,0 +1,212 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
+// Redirect root to login
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+// Guest Routes - Login Page
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+});
+
+// Auth Routes - Login & Logout
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| Profil Routes (shared across all roles)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->group(function () {
+    Route::get('/profil', [\App\Http\Controllers\ProfilController::class, 'index'])->name('profil.index');
+    Route::put('/profil', [\App\Http\Controllers\ProfilController::class, 'update'])->name('profil.update');
+    Route::put('/profil/password', [\App\Http\Controllers\ProfilController::class, 'updatePassword'])->name('profil.password');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])
+        ->name('admin.dashboard');
+
+    // Pengguna Management Routes
+    Route::resource('pengguna', \App\Http\Controllers\Admin\PenggunaController::class, [
+        'as' => 'admin'
+    ]);
+    Route::put('pengguna/{pengguna}/reset-password', [\App\Http\Controllers\Admin\PenggunaController::class, 'resetPassword'])
+        ->name('admin.pengguna.reset-password');
+
+    // Kelas Management Routes
+    Route::resource('kelas', \App\Http\Controllers\Admin\KelasController::class, [
+        'as' => 'admin'
+    ]);
+
+    // Tahun Ajaran Management Routes
+    Route::resource('tahunajaran', \App\Http\Controllers\Admin\TahunAjaranController::class, [
+        'as' => 'admin'
+    ]);
+    Route::put('tahunajaran/{tahunajaran}/set-active', [\App\Http\Controllers\Admin\TahunAjaranController::class, 'setActive'])
+        ->name('admin.tahunajaran.set-active');
+
+    // Siswa Management Routes
+    Route::resource('siswa', \App\Http\Controllers\Admin\SiswaController::class, [
+        'as' => 'admin'
+    ]);
+
+    // Kriteria Management Routes
+    Route::resource('kriteria', \App\Http\Controllers\Admin\KriteriaController::class, [
+        'as' => 'admin'
+    ]);
+
+    // Sub Kriteria Management Routes
+    Route::resource('subkriteria', \App\Http\Controllers\Admin\SubKriteriaController::class, [
+        'as' => 'admin'
+    ]);
+
+    // Jenis Pelanggaran Management Routes
+    Route::resource('jenispelanggaran', \App\Http\Controllers\Admin\JenisPelanggaranController::class, [
+        'as' => 'admin'
+    ]);
+
+    // Riwayat Pelanggaran Management Routes
+    Route::get('riwayatpelanggaran/get-jenis-pelanggaran', [\App\Http\Controllers\Admin\RiwayatPelanggaranController::class, 'getJenisPelanggaranByKategori'])
+        ->name('admin.riwayatpelanggaran.getJenisPelanggaran');
+    Route::resource('riwayatpelanggaran', \App\Http\Controllers\Admin\RiwayatPelanggaranController::class, [
+        'as' => 'admin'
+    ]);
+
+    // Penilaian Siswa Management Routes
+    Route::get('penilaian/get-c5', [\App\Http\Controllers\Admin\PenilaianController::class, 'getC5'])
+        ->name('admin.penilaian.getC5');
+    Route::resource('penilaian', \App\Http\Controllers\Admin\PenilaianController::class, [
+        'as' => 'admin'
+    ]);
+
+    // Perhitungan SMART-MOORA Routes
+    Route::prefix('perhitungan')->name('admin.perhitungan.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PerhitunganController::class, 'index'])->name('index');
+        Route::post('/calculate', [\App\Http\Controllers\Admin\PerhitunganController::class, 'calculate'])->name('calculate');
+        Route::get('/steps/{id_ta}/{metode}', [\App\Http\Controllers\Admin\PerhitunganController::class, 'showSteps'])->name('steps');
+        Route::get('/compare/{id_ta}', [\App\Http\Controllers\Admin\PerhitunganController::class, 'compare'])->name('compare');
+    });
+
+
+    // Tambahkan route admin lainnya di sini
+});
+
+/*
+|--------------------------------------------------------------------------
+| Wali Kelas Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('wali-kelas')->middleware(['auth', 'check.level:Wali Kelas'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\WaliKelas\DashboardController::class, 'index'])
+        ->name('walikelas.dashboard');
+
+    // Kelas (read-only)
+    Route::get('kelas', [\App\Http\Controllers\WaliKelas\KelasController::class, 'index'])
+        ->name('walikelas.kelas.index');
+    Route::get('kelas/{kelas}', [\App\Http\Controllers\WaliKelas\KelasController::class, 'show'])
+        ->name('walikelas.kelas.show');
+
+    // Tahun Ajaran (read-only)
+    Route::get('tahunajaran', [\App\Http\Controllers\WaliKelas\TahunAjaranController::class, 'index'])
+        ->name('walikelas.tahunajaran.index');
+    Route::get('tahunajaran/{tahunajaran}', [\App\Http\Controllers\WaliKelas\TahunAjaranController::class, 'show'])
+        ->name('walikelas.tahunajaran.show');
+
+    // Kriteria (read-only)
+    Route::get('kriteria', [\App\Http\Controllers\WaliKelas\KriteriaController::class, 'index'])
+        ->name('walikelas.kriteria.index');
+    Route::get('kriteria/{kriteria}', [\App\Http\Controllers\WaliKelas\KriteriaController::class, 'show'])
+        ->name('walikelas.kriteria.show');
+
+    // Sub Kriteria (read-only)
+    Route::get('subkriteria', [\App\Http\Controllers\WaliKelas\SubKriteriaController::class, 'index'])
+        ->name('walikelas.subkriteria.index');
+
+    // Jenis Pelanggaran (read-only)
+    Route::get('jenispelanggaran', [\App\Http\Controllers\WaliKelas\JenisPelanggaranController::class, 'index'])
+        ->name('walikelas.jenispelanggaran.index');
+
+    // Siswa Management (scoped to wali kelas's class)
+    Route::resource('siswa', \App\Http\Controllers\WaliKelas\SiswaController::class, [
+        'as' => 'walikelas'
+    ]);
+
+    // Riwayat Pelanggaran Management (scoped to wali kelas's class)
+    Route::get('riwayatpelanggaran/get-jenis-pelanggaran', [\App\Http\Controllers\WaliKelas\RiwayatPelanggaranController::class, 'getJenisPelanggaranByKategori'])
+        ->name('walikelas.riwayatpelanggaran.getJenisPelanggaran');
+    Route::resource('riwayatpelanggaran', \App\Http\Controllers\WaliKelas\RiwayatPelanggaranController::class, [
+        'as' => 'walikelas'
+    ]);
+
+    // Penilaian Siswa Management (scoped to wali kelas's class)
+    Route::get('penilaian/get-c5', [\App\Http\Controllers\WaliKelas\PenilaianController::class, 'getC5'])
+        ->name('walikelas.penilaian.getC5');
+    Route::resource('penilaian', \App\Http\Controllers\WaliKelas\PenilaianController::class, [
+        'as' => 'walikelas'
+    ]);
+
+    // Perhitungan SMART-MOORA (scoped to wali kelas's class)
+    Route::prefix('perhitungan')->name('walikelas.perhitungan.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'index'])->name('index');
+        Route::post('/calculate', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'calculate'])->name('calculate');
+        Route::get('/steps/{id_ta}/{metode}', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'showSteps'])->name('steps');
+        Route::get('/compare/{id_ta}', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'compare'])->name('compare');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Kepala Sekolah Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('kepala-sekolah')->middleware(['auth', 'check.level:Kepala Sekolah'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\KepalaSekolah\DashboardController::class, 'index'])
+        ->name('kepalasekolah.dashboard');
+
+    // Siswa (read-only)
+    Route::get('siswa', [\App\Http\Controllers\KepalaSekolah\SiswaController::class, 'index'])
+        ->name('kepalasekolah.siswa.index');
+
+    // Kelas (read-only)
+    Route::get('kelas', [\App\Http\Controllers\KepalaSekolah\KelasController::class, 'index'])
+        ->name('kepalasekolah.kelas.index');
+
+    // Kriteria (read-only)
+    Route::get('kriteria', [\App\Http\Controllers\KepalaSekolah\KriteriaController::class, 'index'])
+        ->name('kepalasekolah.kriteria.index');
+
+    // Penilaian (read-only)
+    Route::get('penilaian', [\App\Http\Controllers\KepalaSekolah\PenilaianController::class, 'index'])
+        ->name('kepalasekolah.penilaian.index');
+
+    // Perangkingan / Hasil Perhitungan
+    Route::get('perhitungan', [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'index'])
+        ->name('kepalasekolah.perhitungan.index');
+    Route::get('perhitungan/compare/{id_ta}', [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'compare'])
+        ->name('kepalasekolah.perhitungan.compare');
+
+    // Report / Export
+    Route::get('report/pdf', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportPdf'])
+        ->name('kepalasekolah.report.pdf');
+    Route::get('report/excel', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportExcel'])
+        ->name('kepalasekolah.report.excel');
+});
