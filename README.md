@@ -66,7 +66,6 @@ Atau jika dari file ZIP, ekstrak ke `c:\laragon\www\SPKSmartMoora`.
 
 ```bash
 composer install
-npm install
 ```
 
 ### 3. Konfigurasi Environment
