@@ -166,6 +166,12 @@
                 <div data-i18n="Kriteria">Kriteria</div>
               </a>
             </li>
+            <li class="menu-item {{ request()->is('kepala-sekolah/matapelajaran*') ? 'active' : '' }}">
+              <a href="{{ route('kepalasekolah.matapelajaran.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-book-open"></i>
+                <div data-i18n="Mata Pelajaran">Mata Pelajaran</div>
+              </a>
+            </li>
             <li class="menu-item {{ request()->is('kepala-sekolah/penilaian*') ? 'active' : '' }}">
               <a href="{{ route('kepalasekolah.penilaian.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-star"></i>

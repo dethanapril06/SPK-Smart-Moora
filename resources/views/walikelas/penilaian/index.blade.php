@@ -9,7 +9,9 @@
                     <li class="breadcrumb-item active">Penilaian Siswa - {{ $kelas->nama_kelas }}</li>
                 </ol>
             </nav>
-            <a href="{{ route('walikelas.penilaian.create') }}" class="btn btn-sm btn-primary"><i class="bx bx-plus"></i></a>
+            <button type="button" class="btn btn-sm btn-success" id="btn-aggregate">
+                <i class="bx bx-refresh"></i> Agregasi dari Rapor
+            </button>
         </div>
 
         @if (session('success'))
@@ -20,6 +22,12 @@
             <div class="alert alert-danger alert-dismissible" role="alert">{{ session('error') }}<button type="button"
                     class="btn-close" data-bs-dismiss="alert"></button></div>
         @endif
+
+        <!-- Hidden aggregate form -->
+        <form id="aggregate-form" action="{{ route('walikelas.penilaian.aggregate') }}" method="POST" class="d-none">
+            @csrf
+            <input type="hidden" name="id_ta" id="aggregate_id_ta">
+        </form>
 
         <div class="card mb-4">
             <h5 class="card-header">Filter</h5>
@@ -70,7 +78,7 @@
                                     @endif
                                 </th>
                             @endforeach
-                            <th class="text-center" style="width: 120px;">Aksi</th>
+                            <th class="text-center" style="width: 80px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -96,27 +104,13 @@
                                     </td>
                                 @endforeach
                                 <td class="text-center">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        @if ($penilaianBySiswa->count() > 0)
-                                            <a href="{{ route('walikelas.penilaian.show', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
-                                                class="btn btn-sm btn-icon btn-label-info" title="Detail"><i
-                                                    class="bx bx-show"></i></a>
-                                            <a href="{{ route('walikelas.penilaian.edit', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
-                                                class="btn btn-sm btn-icon btn-label-primary" title="Edit"><i
-                                                    class="bx bx-edit"></i></a>
-                                            <button type="button" class="btn btn-sm btn-icon btn-label-danger btn-delete"
-                                                data-id="{{ $siswa->id_siswa }}"
-                                                data-ta="{{ $filterTA ?: $siswa->id_ta }}"
-                                                data-name="{{ $siswa->nama_siswa }}" title="Hapus"><i
-                                                    class="bx bx-trash"></i></button>
-                                            <form id="delete-form-{{ $siswa->id_siswa }}"
-                                                action="{{ route('walikelas.penilaian.destroy', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
-                                                method="POST" class="d-none">@csrf @method('DELETE')</form>
-                                        @else
-                                            <a href="{{ route('walikelas.penilaian.create', ['siswa' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
-                                                class="btn btn-sm btn-label-success"><i class="bx bx-plus"></i> Nilai</a>
-                                        @endif
-                                    </div>
+                                    @if ($penilaianBySiswa->count() > 0)
+                                        <a href="{{ route('walikelas.penilaian.show', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
+                                            class="btn btn-sm btn-icon btn-label-info" title="Detail"><i
+                                                class="bx bx-show"></i></a>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -138,7 +132,6 @@
                         </div>
                         <nav aria-label="Page navigation">
                             <ul class="pagination pagination-sm mb-0">
-                                {{-- First Page Link --}}
                                 @if ($siswaList->onFirstPage())
                                     <li class="page-item disabled">
                                         <span class="page-link"><i class="tf-icon bx bx-chevrons-left"></i></span>
@@ -150,7 +143,6 @@
                                     </li>
                                 @endif
 
-                                {{-- Previous Page Link --}}
                                 @if ($siswaList->onFirstPage())
                                     <li class="page-item disabled">
                                         <span class="page-link"><i class="tf-icon bx bx-chevron-left"></i></span>
@@ -162,7 +154,6 @@
                                     </li>
                                 @endif
 
-                                {{-- Pagination Elements --}}
                                 @foreach ($siswaList->getUrlRange(max(1, $siswaList->currentPage() - 2), min($siswaList->lastPage(), $siswaList->currentPage() + 2)) as $page => $url)
                                     @if ($page == $siswaList->currentPage())
                                         <li class="page-item active"><span class="page-link">{{ $page }}</span>
@@ -173,7 +164,6 @@
                                     @endif
                                 @endforeach
 
-                                {{-- Next Page Link --}}
                                 @if ($siswaList->hasMorePages())
                                     <li class="page-item">
                                         <a class="page-link" href="{{ $siswaList->nextPageUrl() }}"><i
@@ -185,7 +175,6 @@
                                     </li>
                                 @endif
 
-                                {{-- Last Page Link --}}
                                 @if ($siswaList->hasMorePages())
                                     <li class="page-item">
                                         <a class="page-link" href="{{ $siswaList->url($siswaList->lastPage()) }}"><i
@@ -206,22 +195,39 @@
 
     @push('scripts')
         <script>
-            document.querySelectorAll('.btn-delete').forEach(button => {
-                button.addEventListener('click', function() {
-                    const itemId = this.dataset.id;
-                    const itemName = this.dataset.name;
-                    Swal.fire({
-                        title: 'Hapus Penilaian?',
-                        html: `Yakin ingin menghapus semua penilaian siswa <strong>${itemName}</strong>?`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        confirmButtonText: 'Ya, Hapus!',
-                        cancelButtonText: 'Batal'
-                    }).then((result) => {
-                        if (result.isConfirmed) document.getElementById(`delete-form-${itemId}`)
-                        .submit();
-                    });
+            // SweetAlert untuk Agregasi
+            document.getElementById('btn-aggregate').addEventListener('click', function() {
+                let taOptions = '';
+                @foreach ($tahunAjaranList as $ta)
+                    taOptions +=
+                        '<option value="{{ $ta->id_ta }}">{{ $ta->tahun_ajaran }} - Semester {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}</option>';
+                @endforeach
+
+                Swal.fire({
+                    title: 'Agregasi Data Rapor',
+                    html: `
+                        <p class="text-muted">Hitung otomatis nilai C1-C6 dari data rapor yang telah diinput (Pengetahuan, Keterampilan, Sikap, Ekskul, Pelanggaran, Absensi).</p>
+                        <select id="swal-ta" class="form-select">
+                            <option value="">-- Pilih Tahun Ajaran --</option>
+                            ${taOptions}
+                        </select>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="bx bx-refresh"></i> Proses Agregasi',
+                    cancelButtonText: 'Batal',
+                    preConfirm: () => {
+                        const selected = document.getElementById('swal-ta').value;
+                        if (!selected) {
+                            Swal.showValidationMessage('Pilih tahun ajaran terlebih dahulu');
+                        }
+                        return selected;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('aggregate_id_ta').value = result.value;
+                        document.getElementById('aggregate-form').submit();
+                    }
                 });
             });
         </script>

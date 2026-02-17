@@ -191,6 +191,45 @@
                 <div data-i18n="Jenis Pelanggaran">Jenis Pelanggaran</div>
               </a>
             </li>
+            <li class="menu-item {{ request()->is('admin/matapelajaran*') ? 'active' : '' }}">
+              <a href="{{ route('admin.matapelajaran.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-book-open"></i>
+                <div data-i18n="Mata Pelajaran">Mata Pelajaran</div>
+              </a>
+            </li>
+
+            <!-- Input Data Rapor -->
+            <li class="menu-header small text-uppercase"><span class="menu-header-text">Input Data Rapor</span></li>
+            <li class="menu-item {{ request()->is('admin/nilaipengetahuan*') ? 'active' : '' }}">
+              <a href="{{ route('admin.nilaipengetahuan.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-brain"></i>
+                <div data-i18n="Nilai Pengetahuan">Nilai Pengetahuan</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('admin/nilaiketerampilan*') ? 'active' : '' }}">
+              <a href="{{ route('admin.nilaiketerampilan.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-wrench"></i>
+                <div data-i18n="Nilai Keterampilan">Nilai Keterampilan</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('admin/nilaisikap*') ? 'active' : '' }}">
+              <a href="{{ route('admin.nilaisikap.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-heart"></i>
+                <div data-i18n="Nilai Sikap">Nilai Sikap</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('admin/nilaiekstrakurikuler*') ? 'active' : '' }}">
+              <a href="{{ route('admin.nilaiekstrakurikuler.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-trophy"></i>
+                <div data-i18n="Ekstrakurikuler">Ekstrakurikuler</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('admin/nilaiabsensi*') ? 'active' : '' }}">
+              <a href="{{ route('admin.nilaiabsensi.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-calendar-check"></i>
+                <div data-i18n="Data Absensi">Data Absensi</div>
+              </a>
+            </li>
 
             <!-- Penilaian -->
             <li class="menu-header small text-uppercase"><span class="menu-header-text">Penilaian</span></li>

@@ -92,9 +92,12 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
     // Penilaian Siswa Management Routes
     Route::get('penilaian/get-c5', [\App\Http\Controllers\Admin\PenilaianController::class, 'getC5'])
         ->name('admin.penilaian.getC5');
-    Route::resource('penilaian', \App\Http\Controllers\Admin\PenilaianController::class, [
-        'as' => 'admin'
-    ]);
+    Route::post('penilaian/aggregate', [\App\Http\Controllers\Admin\PenilaianController::class, 'aggregate'])
+        ->name('admin.penilaian.aggregate');
+    Route::get('penilaian', [\App\Http\Controllers\Admin\PenilaianController::class, 'index'])
+        ->name('admin.penilaian.index');
+    Route::get('penilaian/{penilaian}', [\App\Http\Controllers\Admin\PenilaianController::class, 'show'])
+        ->name('admin.penilaian.show');
 
     // Perhitungan SMART-MOORA Routes
     Route::prefix('perhitungan')->name('admin.perhitungan.')->group(function () {
@@ -104,6 +107,44 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
         Route::get('/compare/{id_ta}', [\App\Http\Controllers\Admin\PerhitunganController::class, 'compare'])->name('compare');
     });
 
+    // --- Raw Score Input Routes ---
+
+    // Mata Pelajaran Management
+    Route::resource('matapelajaran', \App\Http\Controllers\Admin\MataPelajaranController::class, [
+        'as' => 'admin'
+    ]);
+
+    // Nilai Pengetahuan (C1)
+    Route::get('nilaipengetahuan', [\App\Http\Controllers\Admin\NilaiPengetahuanController::class, 'index'])
+        ->name('admin.nilaipengetahuan.index');
+    Route::post('nilaipengetahuan', [\App\Http\Controllers\Admin\NilaiPengetahuanController::class, 'store'])
+        ->name('admin.nilaipengetahuan.store');
+
+    // Nilai Keterampilan (C2)
+    Route::get('nilaiketerampilan', [\App\Http\Controllers\Admin\NilaiKeterampilanController::class, 'index'])
+        ->name('admin.nilaiketerampilan.index');
+    Route::post('nilaiketerampilan', [\App\Http\Controllers\Admin\NilaiKeterampilanController::class, 'store'])
+        ->name('admin.nilaiketerampilan.store');
+
+    // Nilai Sikap (C3)
+    Route::get('nilaisikap', [\App\Http\Controllers\Admin\NilaiSikapController::class, 'index'])
+        ->name('admin.nilaisikap.index');
+    Route::post('nilaisikap', [\App\Http\Controllers\Admin\NilaiSikapController::class, 'store'])
+        ->name('admin.nilaisikap.store');
+
+    // Nilai Ekstrakurikuler (C4)
+    Route::get('nilaiekstrakurikuler', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'index'])
+        ->name('admin.nilaiekstrakurikuler.index');
+    Route::post('nilaiekstrakurikuler', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'store'])
+        ->name('admin.nilaiekstrakurikuler.store');
+    Route::delete('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'destroy'])
+        ->name('admin.nilaiekstrakurikuler.destroy');
+
+    // Nilai Absensi (C6)
+    Route::get('nilaiabsensi', [\App\Http\Controllers\Admin\NilaiAbsensiController::class, 'index'])
+        ->name('admin.nilaiabsensi.index');
+    Route::post('nilaiabsensi', [\App\Http\Controllers\Admin\NilaiAbsensiController::class, 'store'])
+        ->name('admin.nilaiabsensi.store');
 
     // Tambahkan route admin lainnya di sini
 });
@@ -159,9 +200,44 @@ Route::prefix('wali-kelas')->middleware(['auth', 'check.level:Wali Kelas'])->gro
     // Penilaian Siswa Management (scoped to wali kelas's class)
     Route::get('penilaian/get-c5', [\App\Http\Controllers\WaliKelas\PenilaianController::class, 'getC5'])
         ->name('walikelas.penilaian.getC5');
-    Route::resource('penilaian', \App\Http\Controllers\WaliKelas\PenilaianController::class, [
-        'as' => 'walikelas'
-    ]);
+    Route::post('penilaian/aggregate', [\App\Http\Controllers\WaliKelas\PenilaianController::class, 'aggregate'])
+        ->name('walikelas.penilaian.aggregate');
+    Route::get('penilaian', [\App\Http\Controllers\WaliKelas\PenilaianController::class, 'index'])
+        ->name('walikelas.penilaian.index');
+    Route::get('penilaian/{penilaian}', [\App\Http\Controllers\WaliKelas\PenilaianController::class, 'show'])
+        ->name('walikelas.penilaian.show');
+
+    // Nilai Pengetahuan (C1) - scoped to wali kelas's class
+    Route::get('nilaipengetahuan', [\App\Http\Controllers\WaliKelas\NilaiPengetahuanController::class, 'index'])
+        ->name('walikelas.nilaipengetahuan.index');
+    Route::post('nilaipengetahuan', [\App\Http\Controllers\WaliKelas\NilaiPengetahuanController::class, 'store'])
+        ->name('walikelas.nilaipengetahuan.store');
+
+    // Nilai Keterampilan (C2) - scoped to wali kelas's class
+    Route::get('nilaiketerampilan', [\App\Http\Controllers\WaliKelas\NilaiKeterampilanController::class, 'index'])
+        ->name('walikelas.nilaiketerampilan.index');
+    Route::post('nilaiketerampilan', [\App\Http\Controllers\WaliKelas\NilaiKeterampilanController::class, 'store'])
+        ->name('walikelas.nilaiketerampilan.store');
+
+    // Nilai Sikap (C3) - scoped to wali kelas's class
+    Route::get('nilaisikap', [\App\Http\Controllers\WaliKelas\NilaiSikapController::class, 'index'])
+        ->name('walikelas.nilaisikap.index');
+    Route::post('nilaisikap', [\App\Http\Controllers\WaliKelas\NilaiSikapController::class, 'store'])
+        ->name('walikelas.nilaisikap.store');
+
+    // Nilai Ekstrakurikuler (C4) - scoped to wali kelas's class
+    Route::get('nilaiekstrakurikuler', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'index'])
+        ->name('walikelas.nilaiekstrakurikuler.index');
+    Route::post('nilaiekstrakurikuler', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'store'])
+        ->name('walikelas.nilaiekstrakurikuler.store');
+    Route::delete('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'destroy'])
+        ->name('walikelas.nilaiekstrakurikuler.destroy');
+
+    // Nilai Absensi (C6) - scoped to wali kelas's class
+    Route::get('nilaiabsensi', [\App\Http\Controllers\WaliKelas\NilaiAbsensiController::class, 'index'])
+        ->name('walikelas.nilaiabsensi.index');
+    Route::post('nilaiabsensi', [\App\Http\Controllers\WaliKelas\NilaiAbsensiController::class, 'store'])
+        ->name('walikelas.nilaiabsensi.store');
 
     // Perhitungan SMART-MOORA (scoped to wali kelas's class)
     Route::prefix('perhitungan')->name('walikelas.perhitungan.')->group(function () {
@@ -194,9 +270,15 @@ Route::prefix('kepala-sekolah')->middleware(['auth', 'check.level:Kepala Sekolah
     Route::get('kriteria', [\App\Http\Controllers\KepalaSekolah\KriteriaController::class, 'index'])
         ->name('kepalasekolah.kriteria.index');
 
+    // Mata Pelajaran (read-only)
+    Route::get('matapelajaran', [\App\Http\Controllers\KepalaSekolah\MataPelajaranController::class, 'index'])
+        ->name('kepalasekolah.matapelajaran.index');
+
     // Penilaian (read-only)
     Route::get('penilaian', [\App\Http\Controllers\KepalaSekolah\PenilaianController::class, 'index'])
         ->name('kepalasekolah.penilaian.index');
+    Route::get('penilaian/{penilaian}', [\App\Http\Controllers\KepalaSekolah\PenilaianController::class, 'show'])
+        ->name('kepalasekolah.penilaian.show');
 
     // Perangkingan / Hasil Perhitungan
     Route::get('perhitungan', [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'index'])

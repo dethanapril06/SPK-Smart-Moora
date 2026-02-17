@@ -49,4 +49,34 @@ class Siswa extends Model
     {
         return $this->hasMany(HasilAkhir::class, 'id_siswa');
     }
+
+    // Relasi dengan NilaiPengetahuan
+    public function nilaiPengetahuan()
+    {
+        return $this->hasMany(NilaiPengetahuan::class, 'id_siswa');
+    }
+
+    // Relasi dengan NilaiKeterampilan
+    public function nilaiKeterampilan()
+    {
+        return $this->hasMany(NilaiKeterampilan::class, 'id_siswa');
+    }
+
+    // Relasi dengan NilaiSikap
+    public function nilaiSikap()
+    {
+        return $this->hasMany(NilaiSikap::class, 'id_siswa');
+    }
+
+    // Relasi dengan NilaiEkstrakurikuler
+    public function nilaiEkstrakurikuler()
+    {
+        return $this->hasMany(NilaiEkstrakurikuler::class, 'id_siswa');
+    }
+
+    // Relasi dengan NilaiAbsensi
+    public function nilaiAbsensi()
+    {
+        return $this->hasMany(NilaiAbsensi::class, 'id_siswa');
+    }
 }

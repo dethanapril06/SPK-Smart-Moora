@@ -64,9 +64,72 @@
                     </tbody>
                 </table>
             </div>
+            <!-- Pagination -->
             @if ($siswaList->hasPages())
                 <div class="card-footer">
-                    {{ $siswaList->appends(request()->query())->links() }}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            Menampilkan {{ $siswaList->firstItem() }} - {{ $siswaList->lastItem() }} dari {{ $siswaList->total() }}
+                            data
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0">
+                                @if ($siswaList->onFirstPage())
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevrons-left"></i></span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $siswaList->url(1) }}"><i
+                                                class="tf-icon bx bx-chevrons-left"></i></a>
+                                    </li>
+                                @endif
+
+                                @if ($siswaList->onFirstPage())
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevron-left"></i></span>
+                                    </li>   
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $siswaList->previousPageUrl() }}"><i
+                                                class="tf-icon bx bx-chevron-left"></i></a>
+                                    </li>
+                                @endif
+
+                                @foreach ($siswaList->getUrlRange(max(1, $siswaList->currentPage() - 2), min($siswaList->lastPage(), $siswaList->currentPage() + 2)) as $page => $url)
+                                    @if ($page == $siswaList->currentPage())
+                                        <li class="page-item active"><span class="page-link">{{ $page }}</span>
+                                        </li>
+                                    @else
+                                        <li class="page-item"><a class="page-link"
+                                                href="{{ $url }}">{{ $page }}</a></li>
+                                    @endif
+                                @endforeach
+
+                                @if ($siswaList->hasMorePages())
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $siswaList->nextPageUrl() }}"><i
+                                                class="tf-icon bx bx-chevron-right"></i></a>
+                                    </li>
+                                @else
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevron-right"></i></span>
+                                    </li>
+                                @endif
+
+                                @if ($siswaList->hasMorePages())
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $siswaList->url($siswaList->lastPage()) }}"><i
+                                                class="tf-icon bx bx-chevrons-right"></i></a>
+                                    </li>
+                                @else
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevrons-right"></i></span>
+                                    </li>
+                                @endif
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             @endif
         </div>

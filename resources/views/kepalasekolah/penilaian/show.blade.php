@@ -1,21 +1,16 @@
-@extends('layouts.admin')
+@extends('layouts.kepalasekolah')
 @section('title', 'Detail Penilaian Siswa')
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
         <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb breadcrumb-style1 mb-0">
-                <li class="breadcrumb-item">
-                    <a href="{{ route('admin.dashboard') }}">Dashboard</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ route('admin.penilaian.index') }}">Penilaian Siswa</a>
-                </li>
+                <li class="breadcrumb-item"><a href="{{ route('kepalasekolah.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('kepalasekolah.penilaian.index') }}">Penilaian Siswa</a></li>
                 <li class="breadcrumb-item active">Detail</li>
             </ol>
         </nav>
 
         <div class="row">
-            <!-- Info Siswa -->
             <div class="col-md-4">
                 <div class="card mb-4">
                     <h5 class="card-header">Info Siswa</h5>
@@ -41,12 +36,16 @@
                     </div>
                 </div>
 
-                <a href="{{ route('admin.penilaian.index') }}" class="btn btn-secondary w-100">
-                    <i class="bx bx-arrow-back me-1"></i> Kembali
-                </a>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-grid">
+                            <a href="{{ route('kepalasekolah.penilaian.index') }}" class="btn btn-secondary"><i
+                                    class="bx bx-arrow-back me-1"></i> Kembali</a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Detail Penilaian -->
             <div class="col-md-8">
                 <div class="card">
                     <h5 class="card-header">Detail Penilaian</h5>
@@ -64,9 +63,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @php
-                                        $totalWeighted = 0;
-                                    @endphp
                                     @foreach ($kriteriaList as $kriteria)
                                         @php
                                             $penilaian = $penilaianList[$kriteria->id_kriteria] ?? null;
@@ -81,9 +77,7 @@
                                             <td>{{ $kriteria->nama_kriteria }}</td>
                                             <td>
                                                 <span
-                                                    class="badge bg-label-{{ $kriteria->jenis_kriteria == 'Benefit' ? 'success' : 'warning' }}">
-                                                    {{ $kriteria->jenis_kriteria }}
-                                                </span>
+                                                    class="badge bg-label-{{ $kriteria->jenis_kriteria == 'Benefit' ? 'success' : 'warning' }}">{{ $kriteria->jenis_kriteria }}</span>
                                             </td>
                                             <td>{{ $kriteria->bobot }}</td>
                                             <td class="text-end">
@@ -110,10 +104,9 @@
                         <div class="mt-3">
                             <h6 class="text-muted">Keterangan:</h6>
                             <ul class="small text-muted mb-0">
-                                <li><strong>Nilai Asli:</strong> Nilai mentah yang diinputkan (0-100)</li>
+                                <li><strong>Nilai Asli:</strong> Nilai mentah hasil agregasi dari data rapor</li>
                                 <li><strong>Nilai Konversi:</strong> Nilai yang sudah dikonversi berdasarkan sub kriteria
                                 </li>
-                                <li><strong>Weighted:</strong> Nilai Konversi × Bobot Kriteria</li>
                                 <li><i class="bx bx-bolt text-warning"></i> <strong>C5</strong> dihitung otomatis dari total
                                     poin pelanggaran</li>
                             </ul>

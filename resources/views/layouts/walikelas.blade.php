@@ -190,6 +190,39 @@
               </a>
             </li>
 
+            <!-- Input Data Rapor -->
+            <li class="menu-header small text-uppercase"><span class="menu-header-text">Input Data Rapor</span></li>
+            <li class="menu-item {{ request()->is('wali-kelas/nilaipengetahuan*') ? 'active' : '' }}">
+              <a href="{{ route('walikelas.nilaipengetahuan.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-book-open"></i>
+                <div data-i18n="Nilai Pengetahuan">Nilai Pengetahuan</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('wali-kelas/nilaiketerampilan*') ? 'active' : '' }}">
+              <a href="{{ route('walikelas.nilaiketerampilan.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-wrench"></i>
+                <div data-i18n="Nilai Keterampilan">Nilai Keterampilan</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('wali-kelas/nilaisikap*') ? 'active' : '' }}">
+              <a href="{{ route('walikelas.nilaisikap.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-heart"></i>
+                <div data-i18n="Nilai Sikap">Nilai Sikap</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('wali-kelas/nilaiekstrakurikuler*') ? 'active' : '' }}">
+              <a href="{{ route('walikelas.nilaiekstrakurikuler.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-trophy"></i>
+                <div data-i18n="Nilai Ekstrakurikuler">Nilai Ekstrakurikuler</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('wali-kelas/nilaiabsensi*') ? 'active' : '' }}">
+              <a href="{{ route('walikelas.nilaiabsensi.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-calendar-check"></i>
+                <div data-i18n="Data Absensi">Data Absensi</div>
+              </a>
+            </li>
+
             <!-- Penilaian -->
             <li class="menu-header small text-uppercase"><span class="menu-header-text">Penilaian</span></li>
             <li class="menu-item {{ request()->is('wali-kelas/riwayatpelanggaran*') ? 'active' : '' }}">

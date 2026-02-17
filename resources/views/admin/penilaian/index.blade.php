@@ -11,9 +11,9 @@
                     <li class="breadcrumb-item active">Penilaian Siswa</li>
                 </ol>
             </nav>
-            <a href="{{ route('admin.penilaian.create') }}" class="btn btn-sm btn-primary">
-                <i class="bx bx-plus"></i>
-            </a>
+            <button type="button" class="btn btn-sm btn-success" id="btn-aggregate">
+                <i class="bx bx-refresh me-1"></i> Agregasi dari Rapor
+            </button>
         </div>
 
         @if (session('success'))
@@ -138,27 +138,8 @@
                                                 class="btn btn-sm btn-icon btn-label-info" title="Detail">
                                                 <i class="bx bx-show"></i>
                                             </a>
-                                            <a href="{{ route('admin.penilaian.edit', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
-                                                class="btn btn-sm btn-icon btn-label-primary" title="Edit">
-                                                <i class="bx bx-edit"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-icon btn-label-danger btn-delete"
-                                                data-id="{{ $siswa->id_siswa }}"
-                                                data-ta="{{ $filterTA ?: $siswa->id_ta }}"
-                                                data-name="{{ $siswa->nama_siswa }}" title="Hapus">
-                                                <i class="bx bx-trash"></i>
-                                            </button>
-                                            <form id="delete-form-{{ $siswa->id_siswa }}"
-                                                action="{{ route('admin.penilaian.destroy', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
-                                                method="POST" class="d-none">
-                                                @csrf
-                                                @method('DELETE')
-                                            </form>
                                         @else
-                                            <a href="{{ route('admin.penilaian.create', ['siswa' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
-                                                class="btn btn-sm btn-label-success">
-                                                <i class="bx bx-plus"></i> Nilai
-                                            </a>
+                                            <span class="text-muted">-</span>
                                         @endif
                                     </div>
                                 </td>
@@ -250,29 +231,47 @@
         </div>
     </div>
 
+    <!-- Hidden form for aggregate -->
+    <form id="aggregate-form" action="{{ route('admin.penilaian.aggregate') }}" method="POST" class="d-none">
+        @csrf
+        <input type="hidden" name="id_ta" id="aggregate_id_ta">
+    </form>
+
     @push('scripts')
         <script>
-            // SweetAlert untuk Delete
-            document.querySelectorAll('.btn-delete').forEach(button => {
-                button.addEventListener('click', function() {
-                    const itemId = this.dataset.id;
-                    const itemTA = this.dataset.ta;
-                    const itemName = this.dataset.name;
+            // SweetAlert untuk Agregasi
+            document.getElementById('btn-aggregate').addEventListener('click', function() {
+                let taOptions = '';
+                @foreach ($tahunAjaranList as $ta)
+                    taOptions +=
+                        '<option value="{{ $ta->id_ta }}">{{ $ta->tahun_ajaran }} - Semester {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}</option>';
+                @endforeach
 
-                    Swal.fire({
-                        title: 'Hapus Penilaian?',
-                        html: `Yakin ingin menghapus semua penilaian siswa <strong>${itemName}</strong>?<br><small class="text-muted">Data yang dihapus tidak dapat dikembalikan!</small>`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#8592a3',
-                        confirmButtonText: 'Ya, Hapus!',
-                        cancelButtonText: 'Batal'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            document.getElementById(`delete-form-${itemId}`).submit();
+                Swal.fire({
+                    title: 'Agregasi Data Rapor',
+                    html: `
+                        <p class="text-muted">Hitung otomatis nilai C1-C6 dari data rapor yang telah diinput (Pengetahuan, Keterampilan, Sikap, Ekskul, Pelanggaran, Absensi).</p>
+                        <select id="swal-ta" class="form-select">
+                            <option value="">-- Pilih Tahun Ajaran --</option>
+                            ${taOptions}
+                        </select>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="bx bx-refresh"></i> Proses Agregasi',
+                    cancelButtonText: 'Batal',
+                    preConfirm: () => {
+                        const selected = document.getElementById('swal-ta').value;
+                        if (!selected) {
+                            Swal.showValidationMessage('Pilih tahun ajaran terlebih dahulu');
                         }
-                    });
+                        return selected;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('aggregate_id_ta').value = result.value;
+                        document.getElementById('aggregate-form').submit();
+                    }
                 });
             });
         </script>
