@@ -45,7 +45,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 mt-3">
                             <label class="form-label" for="kategori">Kategori Pelanggaran</label>
                             <select class="form-select" id="kategori" name="kategori">
                                 <option value="">Semua Kategori</option>
@@ -56,7 +56,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 mt-3">
                             <label class="form-label" for="kelas">Kelas</label>
                             <select class="form-select" id="kelas" name="kelas">
                                 <option value="">Semua Kelas</option>
@@ -79,7 +79,7 @@
                                 value="{{ $filterTanggalSelesai }}">
                         </div>
                     </div>
-                    <div class="mt-3">
+                    <div class="mt-3 text-end">
                         <button type="submit" class="btn btn-primary">
                             <i class="bx bx-search"></i> Cari
                         </button>

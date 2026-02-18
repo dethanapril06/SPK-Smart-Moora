@@ -34,7 +34,7 @@
                                 placeholder="Cari berdasarkan NISN, nama siswa, alamat, atau kelas..."
                                 value="{{ $search }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 mt-3 text-end">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bx bx-search"></i>
                             </button>

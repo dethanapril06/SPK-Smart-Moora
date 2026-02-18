@@ -41,7 +41,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 mt-3 text-end">
                             <button type="submit" class="btn btn-primary"><i class="bx bx-filter-alt"></i> Filter</button>
                         </div>
                     </div>

@@ -28,12 +28,12 @@
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="Cari berdasarkan NISN, nama siswa, atau alamat..." value="{{ $search }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 mt-3 text-end">
                             <button type="submit" class="btn btn-primary"><i class="bx bx-search"></i></button>
                         </div>
                     </div>
                     @if ($search)
-                        <div class="mt-2">
+                        <div class="mt-2 text-end">
                             <a href="{{ route('walikelas.siswa.index') }}" class="btn btn-sm btn-label-secondary">
                                 <i class="bx bx-x"></i> Reset
                             </a>

@@ -41,7 +41,7 @@
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="NISN atau nama siswa..." value="{{ $search }}">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 mt-3">
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran</label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran">
                                 <option value="">Semua Tahun Ajaran</option>
@@ -52,7 +52,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 mt-3">
                             <label class="form-label" for="kelas">Kelas</label>
                             <select class="form-select" id="kelas" name="kelas">
                                 <option value="">Semua Kelas</option>
@@ -65,7 +65,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="mt-3">
+                    <div class="mt-3 text-end">
                         <button type="submit" class="btn btn-primary">
                             <i class="bx bx-search"></i> Cari
                         </button>

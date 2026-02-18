@@ -40,7 +40,7 @@
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="Cari berdasarkan nama, email, atau level..." value="{{ $search }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 mt-3 text-end">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bx bx-search"></i>
                             </button>

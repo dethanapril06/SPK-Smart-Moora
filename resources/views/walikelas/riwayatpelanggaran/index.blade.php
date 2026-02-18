@@ -32,7 +32,7 @@
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="NISN, nama siswa, atau pelanggaran..." value="{{ $search }}">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 mt-3">
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran</label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran">
                                 <option value="">Semua Tahun Ajaran</option>
@@ -43,7 +43,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 mt-3">
                             <label class="form-label" for="kategori">Kategori Pelanggaran</label>
                             <select class="form-select" id="kategori" name="kategori">
                                 <option value="">Semua Kategori</option>
@@ -65,7 +65,7 @@
                                 value="{{ $filterTanggalSelesai }}">
                         </div>
                     </div>
-                    <div class="mt-3">
+                    <div class="mt-3 text-end">
                         <button type="submit" class="btn btn-primary"><i class="bx bx-search"></i> Cari</button>
                         <a href="{{ route('walikelas.riwayatpelanggaran.index') }}" class="btn btn-label-secondary"><i
                                 class="bx bx-x"></i> Reset Filter</a>

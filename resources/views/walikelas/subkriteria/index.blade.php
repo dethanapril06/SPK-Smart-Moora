@@ -18,7 +18,7 @@
                             <input type="text" class="form-control" id="search" name="search" placeholder="Cari..."
                                 value="{{ $search }}">
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-5 mt-3">
                             <label class="form-label" for="kriteria">Filter Kriteria</label>
                             <select class="form-select" id="kriteria" name="kriteria">
                                 <option value="">Semua Kriteria</option>
@@ -30,7 +30,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 mt-3 text-end">
                             <button type="submit" class="btn btn-primary"><i class="bx bx-search"></i></button>
                         </div>
                     </div>
