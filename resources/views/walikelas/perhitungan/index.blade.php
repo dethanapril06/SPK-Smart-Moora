@@ -81,6 +81,15 @@
                         </div>
                     </div>
 
+                    @if (!$hasCalculation && $studentsWithCompletePenilaian < 2)
+                        <div class="alert alert-info mt-3 mb-0" role="alert">
+                            <i class="bx bx-bulb me-1"></i>
+                            Tombol <strong>"Hitung Sekarang"</strong> belum aktif karena belum ada cukup data penilaian.
+                            Silakan lakukan <strong>Agregasi Nilai Rapor</strong> terlebih dahulu di menu
+                            <a href="{{ route('walikelas.penilaian.index') }}" class="alert-link">Penilaian Siswa</a>.
+                        </div>
+                    @endif
+
                     <form id="calculate-form" action="{{ route('walikelas.perhitungan.calculate') }}" method="POST"
                         class="d-none">
                         @csrf
