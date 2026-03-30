@@ -231,7 +231,7 @@
                 <div data-i18n="Riwayat Pelanggaran">Riwayat Pelanggaran</div>
               </a>
             </li>
-            <li class="menu-item {{ request()->is('wali-kelas/penilaian*') ? 'active' : '' }}">
+            <li class="menu-item {{ request()->is('wali-kelas/penilaian*') ? 'active' : '' }}" style="margin-bottom: 50px">
               <a href="{{ route('walikelas.penilaian.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-star"></i>
                 <div data-i18n="Penilaian Siswa">Penilaian Siswa</div>
@@ -337,11 +337,11 @@
             <footer class="content-footer footer bg-footer-theme">
               <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
                 <div class="mb-2 mb-md-0">
-                  ©
+                  © SPK Smart Moora
                   <script>
                       document.write(new Date().getFullYear());
                   </script>
-                  , made with ❤️ by
+                  , made by
                   <a href="#" target="_blank" class="footer-link fw-bolder">Sinyo</a>
                 </div>
               </div>
