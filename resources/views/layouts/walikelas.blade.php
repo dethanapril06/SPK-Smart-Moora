@@ -341,8 +341,6 @@
                   <script>
                       document.write(new Date().getFullYear());
                   </script>
-                  , made by
-                  <a href="#" target="_blank" class="footer-link fw-bolder">Sinyo</a>
                 </div>
               </div>
             </footer>
