@@ -5,7 +5,6 @@ namespace App\Http\Controllers\WaliKelas;
 use App\Http\Controllers\Controller;
 use App\Models\NilaiPengetahuan;
 use App\Models\Siswa;
-use App\Models\MataPelajaran;
 use App\Models\TahunAjaran;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
