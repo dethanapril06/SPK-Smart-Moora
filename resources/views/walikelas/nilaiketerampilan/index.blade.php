@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        @if ($filterTA && $siswaList->count() > 0)
+        @if ($filterTA && $siswaList->count() > 0 && $mapelList->count() > 0)
             <div class="card">
                 <h5 class="card-header">Input Nilai Keterampilan (C2) - Kelas {{ $kelas->nama_kelas }}</h5>
                 <div class="card-body">
@@ -97,6 +97,11 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        @elseif($filterTA && $mapelList->count() == 0)
+            <div class="alert alert-warning">
+                <i class="bx bx-warning me-1"></i>
+                Kelas Anda belum memiliki mata pelajaran yang di-assign. Hubungi Admin untuk mengatur mata pelajaran.
             </div>
         @elseif($filterTA)
             <div class="alert alert-info">Tidak ada siswa ditemukan untuk tahun ajaran yang dipilih.</div>

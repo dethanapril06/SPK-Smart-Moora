@@ -26,7 +26,9 @@ class NilaiKeterampilanController extends Controller
         $filterTA = $request->get('tahun_ajaran');
 
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
-        $mapelList = MataPelajaran::orderBy('kode_mapel')->get();
+        
+        // Get mapel based on kelas relationship
+        $mapelList = $kelas->mataPelajaran()->orderBy('kode_mapel')->get();
 
         $siswaList = collect();
 

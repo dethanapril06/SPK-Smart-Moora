@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\NilaiKeterampilan;
 use App\Models\Siswa;
-use App\Models\MataPelajaran;
 use App\Models\TahunAjaran;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
@@ -20,7 +19,15 @@ class NilaiKeterampilanController extends Controller
 
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
-        $mapelList = MataPelajaran::orderBy('kode_mapel')->get();
+        
+        // Get mapel based on selected kelas relationship
+        $mapelList = collect();
+        if ($filterKelas) {
+            $kelas = Kelas::with('mataPelajaran')->find($filterKelas);
+            if ($kelas) {
+                $mapelList = $kelas->mataPelajaran()->orderBy('kode_mapel')->get();
+            }
+        }
 
         $siswaList = collect();
 

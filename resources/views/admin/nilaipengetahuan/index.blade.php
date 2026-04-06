@@ -61,7 +61,7 @@
             </div>
         </div>
 
-        @if ($filterTA && $filterKelas && $siswaList->count() > 0)
+        @if ($filterTA && $filterKelas && $siswaList->count() > 0 && $mapelList->count() > 0)
             <div class="card">
                 <h5 class="card-header">Input Nilai Pengetahuan (C1)</h5>
                 <div class="card-body">
@@ -110,6 +110,12 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        @elseif($filterTA && $filterKelas && $mapelList->count() == 0)
+            <div class="alert alert-warning">
+                <i class="bx bx-warning me-1"></i>
+                Kelas ini belum memiliki mata pelajaran yang di-assign.
+                <a href="{{ route('admin.kelas.edit', $filterKelas) }}">Atur mata pelajaran</a> terlebih dahulu.
             </div>
         @elseif($filterTA && $filterKelas)
             <div class="alert alert-info">Tidak ada siswa ditemukan untuk filter yang dipilih.</div>
