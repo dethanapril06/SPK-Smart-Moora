@@ -19,13 +19,15 @@ class KelasController extends Controller
         
         $kelas = Kelas::with('waliKelas', 'mataPelajaran')
             ->when($search, function ($query, $search) {
-                return $query->where('nama_kelas', 'like', "%{$search}%")
-                    ->orWhere('id_kelas', 'like', "%{$search}%")
-                    ->orWhereHas('waliKelas', function($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    });
+                return $query->where(function ($q) use ($search) {
+                    $q->where('nama_kelas', 'like', "%{$search}%")
+                        ->orWhere('id_kelas', 'like', "%{$search}%")
+                        ->orWhereHas('waliKelas', function($wq) use ($search) {
+                            $wq->where('name', 'like', "%{$search}%");
+                        });
+                });
             })
-            ->orderBy('created_at', 'desc')
+            ->orderBy('nama_kelas')
             ->paginate(10)
             ->appends(['search' => $search]);
         

@@ -100,6 +100,7 @@
                 </table>
             </div>
 
+            <!-- Pagination -->
             @if ($mataPelajaran->hasPages())
                 <div class="card-footer">
                     <div class="d-flex justify-content-between align-items-center">
@@ -107,7 +108,63 @@
                             Menampilkan {{ $mataPelajaran->firstItem() }} - {{ $mataPelajaran->lastItem() }} dari
                             {{ $mataPelajaran->total() }} data
                         </div>
-                        {{ $mataPelajaran->links() }}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0">
+                                @if ($mataPelajaran->onFirstPage())
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevrons-left"></i></span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $mataPelajaran->url(1) }}"><i
+                                                class="tf-icon bx bx-chevrons-left"></i></a>
+                                    </li>
+                                @endif
+
+                                @if ($mataPelajaran->onFirstPage())
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevron-left"></i></span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $mataPelajaran->previousPageUrl() }}"><i
+                                                class="tf-icon bx bx-chevron-left"></i></a>
+                                    </li>
+                                @endif
+
+                                @foreach ($mataPelajaran->getUrlRange(max(1, $mataPelajaran->currentPage() - 2), min($mataPelajaran->lastPage(), $mataPelajaran->currentPage() + 2)) as $page => $url)
+                                    @if ($page == $mataPelajaran->currentPage())
+                                        <li class="page-item active"><span class="page-link">{{ $page }}</span>
+                                        </li>
+                                    @else
+                                        <li class="page-item"><a class="page-link"
+                                                href="{{ $url }}">{{ $page }}</a></li>
+                                    @endif
+                                @endforeach
+
+                                @if ($mataPelajaran->hasMorePages())
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $mataPelajaran->nextPageUrl() }}"><i
+                                                class="tf-icon bx bx-chevron-right"></i></a>
+                                    </li>
+                                @else
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevron-right"></i></span>
+                                    </li>
+                                @endif
+
+                                @if ($mataPelajaran->hasMorePages())
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $mataPelajaran->url($mataPelajaran->lastPage()) }}"><i
+                                                class="tf-icon bx bx-chevrons-right"></i></a>
+                                    </li>
+                                @else
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevrons-right"></i></span>
+                                    </li>
+                                @endif
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             @endif
