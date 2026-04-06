@@ -29,4 +29,11 @@ class Kelas extends Model
     {
         return $this->hasMany(Siswa::class, 'id_kelas');
     }
+
+    // Relasi Many-to-Many dengan Mata Pelajaran
+    public function mataPelajaran()
+    {
+        return $this->belongsToMany(MataPelajaran::class, 'tb_kelas_mata_pelajaran', 'id_kelas', 'id_mapel')
+                    ->withTimestamps();
+    }
 }

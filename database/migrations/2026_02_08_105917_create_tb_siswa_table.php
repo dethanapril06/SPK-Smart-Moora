@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('nama_siswa', 50);
             $table->enum('jenis_kelamin', ['L', 'P']);
             $table->string('alamat', 50)->nullable();
-            $table->string('id_kelas', 10)->nullable();
+            $table->string('id_kelas', 50)->nullable();
             $table->foreign('id_kelas')->references('id_kelas')->on('tb_kelas')->nullOnDelete();
             $table->timestamps();
         });
