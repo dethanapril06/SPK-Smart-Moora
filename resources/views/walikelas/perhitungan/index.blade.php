@@ -127,7 +127,9 @@
                         <tbody>
                             @forelse($hasilList as $item)
                                 <tr>
-                                    <td class="text-center">{{ $loop->iteration }}</td>
+                                    <td class="text-center">
+                                        {{ ($hasilList->currentPage() - 1) * $hasilList->perPage() + $loop->iteration }}
+                                    </td>
                                     <td>
                                         <strong>{{ $item->siswa->nisn }}</strong><br>
                                         <small>{{ $item->siswa->nama_siswa }}</small>
@@ -156,8 +158,8 @@
 
                 @if ($hasilList->count() > 0)
                     <div class="card-footer">
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">Total: {{ $hasilList->count() }} siswa</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Total: {{ $hasilList->total() }} siswa</small>
                             <div>
                                 <a href="{{ route('walikelas.perhitungan.steps', ['id_ta' => $filterTA, 'metode' => 'smart']) }}"
                                     class="btn btn-sm btn-label-primary">
@@ -169,6 +171,11 @@
                                 </a>
                             </div>
                         </div>
+
+                        @if ($hasilList->hasPages())
+                            <hr class="my-3">
+                            @include('walikelas.perhitungan._pagination', ['paginator' => $hasilList])
+                        @endif
                     </div>
                 @endif
             </div>

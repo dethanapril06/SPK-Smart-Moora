@@ -71,9 +71,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($detailedSteps as $index => $step)
+                        @foreach ($step1Steps as $index => $step)
                             <tr>
-                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td class="text-center">{{ $step1Steps->firstItem() + $index }}</td>
                                 <td><strong>{{ $step['steps']['nama'] }}</strong></td>
                                 @foreach ($step['steps']['kriteria_details'] as $detail)
                                     <td class="text-center">{{ $detail['nilai_konversi'] }}</td>
@@ -83,6 +83,11 @@
                     </tbody>
                 </table>
             </div>
+            @if ($step1Steps->hasPages())
+                <div class="card-footer">
+                    @include('admin.perhitungan._pagination', ['paginator' => $step1Steps])
+                </div>
+            @endif
         </div>
 
         {{-- Langkah 2: Matrix Normalisasi --}}
@@ -108,9 +113,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($detailedSteps as $index => $step)
+                        @foreach ($step2Steps as $index => $step)
                             <tr>
-                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td class="text-center">{{ $step2Steps->firstItem() + $index }}</td>
                                 <td><strong>{{ $step['steps']['nama'] }}</strong></td>
                                 @foreach ($step['steps']['kriteria_details'] as $detail)
                                     <td class="text-center">{{ $detail['normalized'] }}</td>
@@ -120,6 +125,11 @@
                     </tbody>
                 </table>
             </div>
+            @if ($step2Steps->hasPages())
+                <div class="card-footer">
+                    @include('admin.perhitungan._pagination', ['paginator' => $step2Steps])
+                </div>
+            @endif
         </div>
 
         {{-- Langkah 3: Matrix Pembobotan --}}
@@ -150,9 +160,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($detailedSteps as $index => $step)
+                        @foreach ($step3Steps as $index => $step)
                             <tr>
-                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td class="text-center">{{ $step3Steps->firstItem() + $index }}</td>
                                 <td><strong>{{ $step['steps']['nama'] }}</strong></td>
                                 @foreach ($step['steps']['kriteria_details'] as $detail)
                                     <td class="text-center">
@@ -171,6 +181,11 @@
                     </tbody>
                 </table>
             </div>
+            @if ($step3Steps->hasPages())
+                <div class="card-footer">
+                    @include('admin.perhitungan._pagination', ['paginator' => $step3Steps])
+                </div>
+            @endif
         </div>
 
         {{-- Langkah 4: Perhitungan Skor Akhir & Ranking --}}
@@ -193,9 +208,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($detailedSteps as $index => $step)
+                        @foreach ($step4Steps as $index => $step)
                             <tr>
-                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td class="text-center">{{ $step4Steps->firstItem() + $index }}</td>
                                 <td><strong>{{ $step['steps']['nama'] }}</strong></td>
                                 @if ($metode == 'smart')
                                     <td class="text-center">
@@ -219,6 +234,11 @@
                     </tbody>
                 </table>
             </div>
+            @if ($step4Steps->hasPages())
+                <div class="card-footer">
+                    @include('admin.perhitungan._pagination', ['paginator' => $step4Steps])
+                </div>
+            @endif
         </div>
 
         <div class="card">
@@ -240,5 +260,6 @@
                 @endif
             </div>
         </div>
+
     </div>
 @endsection

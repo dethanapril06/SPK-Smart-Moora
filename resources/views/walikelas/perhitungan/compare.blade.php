@@ -61,10 +61,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($hasilList->sortBy('rank_smart') as $item)
+                        @foreach ($hasilList as $item)
                             @php $rankDiff = abs($item->rank_smart - $item->rank_moora); @endphp
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
+                                <td>{{ ($hasilList->currentPage() - 1) * $hasilList->perPage() + $loop->iteration }}</td>
                                 <td>
                                     <strong>{{ $item->siswa->nisn }}</strong><br>
                                     <small>{{ $item->siswa->nama_siswa }}</small>
@@ -101,14 +101,17 @@
             </div>
 
             <div class="card-footer">
-                <div class="row">
-                    <div class="col-md-6"></div>
-                    <div class="col-md-6 text-end">
-                        <a href="{{ route('walikelas.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
-                            class="btn btn-secondary">
-                            <i class="bx bx-arrow-back"></i> Kembali
-                        </a>
+                @if ($hasilList->hasPages())
+                    <div class="mb-3">
+                        @include('walikelas.perhitungan._pagination', ['paginator' => $hasilList])
                     </div>
+                @endif
+
+                <div class="text-end">
+                    <a href="{{ route('walikelas.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
+                        class="btn btn-secondary">
+                        <i class="bx bx-arrow-back"></i> Kembali
+                    </a>
                 </div>
             </div>
         </div>

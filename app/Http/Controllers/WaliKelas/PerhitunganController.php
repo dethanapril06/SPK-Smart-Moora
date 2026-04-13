@@ -12,6 +12,7 @@ use App\Models\Siswa;
 use App\Services\SmartCalculator;
 use App\Services\MooraCalculator;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class PerhitunganController extends Controller
@@ -56,11 +57,14 @@ class PerhitunganController extends Controller
                 $q->where('id_kelas', $kelasId);
             });
 
-        $hasilList = $hasilQuery->get()->sortBy('rank_smart');
+        $hasilList = $hasilQuery
+            ->orderBy('rank_smart')
+            ->paginate(10)
+            ->withQueryString();
 
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
 
-        $hasCalculation = $filterTA && $hasilList->count() > 0;
+        $hasCalculation = $filterTA && $hasilList->total() > 0;
 
         // Siswa dengan penilaian lengkap di kelas ini
         $studentsWithCompletePenilaian = 0;
@@ -171,8 +175,32 @@ class PerhitunganController extends Controller
             $detailedSteps = $this->mooraCalculator->getDetailedSteps();
         }
 
+        $perPage = 10;
+        $stepsCollection = collect($detailedSteps)->values();
+
+        $buildPaginator = function (string $pageName) use ($stepsCollection, $perPage) {
+            $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
+
+            return new LengthAwarePaginator(
+                $stepsCollection->forPage($currentPage, $perPage)->values(),
+                $stepsCollection->count(),
+                $perPage,
+                $currentPage,
+                [
+                    'path' => request()->url(),
+                    'pageName' => $pageName,
+                    'query' => request()->query(),
+                ]
+            );
+        };
+
+        $step1Steps = $buildPaginator('step1_page');
+        $step2Steps = $buildPaginator('step2_page');
+        $step3Steps = $buildPaginator('step3_page');
+        $step4Steps = $buildPaginator('step4_page');
+
         return view('walikelas.perhitungan.steps', compact(
-            'tahunAjaran', 'metode', 'kriteriaList', 'detailedSteps'
+            'tahunAjaran', 'metode', 'kriteriaList', 'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps'
         ));
     }
 
@@ -185,23 +213,26 @@ class PerhitunganController extends Controller
 
         $userId = auth()->id();
 
-        $hasilList = HasilAkhir::with('siswa')
+        $baseQuery = HasilAkhir::query()
             ->where('id_ta', $id_ta)
             ->where('user_id', $userId)
             ->whereHas('siswa', function ($q) use ($kelasId) {
                 $q->where('id_kelas', $kelasId);
-            })
-            ->get();
+            });
 
-        $agreement = 0;
-        foreach ($hasilList as $hasil) {
-            if ($hasil->rank_smart == $hasil->rank_moora) {
-                $agreement++;
-            }
-        }
+        $totalData = (clone $baseQuery)->count();
+        $agreement = (clone $baseQuery)
+            ->whereColumn('rank_smart', 'rank_moora')
+            ->count();
 
-        $agreementPercentage = $hasilList->count() > 0
-            ? round(($agreement / $hasilList->count()) * 100, 2)
+        $hasilList = (clone $baseQuery)
+            ->with('siswa')
+            ->orderBy('rank_smart')
+            ->paginate(10)
+            ->withQueryString();
+
+        $agreementPercentage = $totalData > 0
+            ? round(($agreement / $totalData) * 100, 2)
             : 0;
 
         return view('walikelas.perhitungan.compare', compact(

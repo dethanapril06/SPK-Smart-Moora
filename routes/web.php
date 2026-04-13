@@ -135,8 +135,12 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
     // Nilai Ekstrakurikuler (C4)
     Route::get('nilaiekstrakurikuler', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'index'])
         ->name('admin.nilaiekstrakurikuler.index');
+    Route::get('nilaiekstrakurikuler/create', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'create'])
+        ->name('admin.nilaiekstrakurikuler.create');
     Route::post('nilaiekstrakurikuler', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'store'])
         ->name('admin.nilaiekstrakurikuler.store');
+    Route::get('nilaiekstrakurikuler/get-ekskul', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'getEkskul'])
+        ->name('admin.nilaiekstrakurikuler.getEkskul');
     Route::delete('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'destroy'])
         ->name('admin.nilaiekstrakurikuler.destroy');
 
@@ -228,8 +232,12 @@ Route::prefix('wali-kelas')->middleware(['auth', 'check.level:Wali Kelas'])->gro
     // Nilai Ekstrakurikuler (C4) - scoped to wali kelas's class
     Route::get('nilaiekstrakurikuler', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'index'])
         ->name('walikelas.nilaiekstrakurikuler.index');
+    Route::get('nilaiekstrakurikuler/create', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'create'])
+        ->name('walikelas.nilaiekstrakurikuler.create');
     Route::post('nilaiekstrakurikuler', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'store'])
         ->name('walikelas.nilaiekstrakurikuler.store');
+    Route::get('nilaiekstrakurikuler/get-ekskul', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'getEkskul'])
+        ->name('walikelas.nilaiekstrakurikuler.getEkskul');
     Route::delete('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'destroy'])
         ->name('walikelas.nilaiekstrakurikuler.destroy');
 

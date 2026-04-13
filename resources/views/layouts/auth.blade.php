@@ -120,7 +120,7 @@
                       </g>
                     </svg>
                   </span>
-                  <span class="app-brand-text demo text-body fw-bolder">SPK Smart Moora</span>
+                  <span class="app-brand-text demo text-body fw-bolder">SPK Siswa Berprestasi</span>
                 </a>
               </div>
               <!-- /Logo -->

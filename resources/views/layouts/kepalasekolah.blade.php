@@ -118,7 +118,7 @@
                   </g>
                 </svg>
               </span>
-              <span class="app-brand-text demo menu-text fw-bolder fs-4 ms-2">SPK Smart Moora</span>
+              <span class="app-brand-text demo menu-text fw-bolder fs-4 ms-2">SPK Siswa Berprestasi</span>
             </a>
 
             <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
@@ -277,7 +277,7 @@
             <footer class="content-footer footer bg-footer-theme">
               <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
                 <div class="mb-2 mb-md-0">
-                  © SPK Smart Moora
+                  © SPK Siswa Berprestasi
                   <script>
                       document.write(new Date().getFullYear());
                   </script>

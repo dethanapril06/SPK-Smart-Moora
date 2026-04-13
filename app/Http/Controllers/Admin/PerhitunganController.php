@@ -11,6 +11,7 @@ use App\Models\Penilaian;
 use App\Services\SmartCalculator;
 use App\Services\MooraCalculator;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class PerhitunganController extends Controller
@@ -48,15 +49,18 @@ class PerhitunganController extends Controller
                     $q->where('id_kelas', $filterKelas);
                 });
             });
-        
-        $hasilList = $hasilQuery->get()->sortBy('rank_smart');
+
+        $hasilList = $hasilQuery
+            ->orderBy('rank_smart')
+            ->paginate(10)
+            ->withQueryString();
         
         // Data for filters
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         
         // Check if calculation exists for selected TA
-        $hasCalculation = $filterTA && $hasilList->count() > 0;
+        $hasCalculation = $filterTA && $hasilList->total() > 0;
         
         // Get students with complete penilaian for selected TA
         $studentsWithCompletePenilaian = 0;
@@ -166,12 +170,39 @@ class PerhitunganController extends Controller
             $results = $this->mooraCalculator->calculate($id_ta);
             $detailedSteps = $this->mooraCalculator->getDetailedSteps();
         }
+
+        $perPage = 10;
+        $stepsCollection = collect($detailedSteps)->values();
+
+        $buildPaginator = function (string $pageName) use ($stepsCollection, $perPage) {
+            $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
+
+            return new LengthAwarePaginator(
+                $stepsCollection->forPage($currentPage, $perPage)->values(),
+                $stepsCollection->count(),
+                $perPage,
+                $currentPage,
+                [
+                    'path' => request()->url(),
+                    'pageName' => $pageName,
+                    'query' => request()->query(),
+                ]
+            );
+        };
+
+        $step1Steps = $buildPaginator('step1_page');
+        $step2Steps = $buildPaginator('step2_page');
+        $step3Steps = $buildPaginator('step3_page');
+        $step4Steps = $buildPaginator('step4_page');
         
         return view('admin.perhitungan.steps', compact(
             'tahunAjaran',
             'metode',
             'kriteriaList',
-            'detailedSteps'
+            'step1Steps',
+            'step2Steps',
+            'step3Steps',
+            'step4Steps'
         ));
     }
     
@@ -181,22 +212,25 @@ class PerhitunganController extends Controller
     public function compare($id_ta)
     {
         $tahunAjaran = TahunAjaran::findOrFail($id_ta);
-        
-        $hasilList = HasilAkhir::with('siswa')
+
+        $baseQuery = HasilAkhir::query()
             ->where('id_ta', $id_ta)
-            ->where('user_id', auth()->id())
-            ->get();
-        
+            ->where('user_id', auth()->id());
+
+        $totalData = (clone $baseQuery)->count();
+        $agreement = (clone $baseQuery)
+            ->whereColumn('rank_smart', 'rank_moora')
+            ->count();
+
+        $hasilList = (clone $baseQuery)
+            ->with('siswa')
+            ->orderBy('rank_smart')
+            ->paginate(10)
+            ->withQueryString();
+
         // Calculate agreement
-        $agreement = 0;
-        foreach ($hasilList as $hasil) {
-            if ($hasil->rank_smart == $hasil->rank_moora) {
-                $agreement++;
-            }
-        }
-        
-        $agreementPercentage = $hasilList->count() > 0 
-            ? round(($agreement / $hasilList->count()) * 100, 2) 
+        $agreementPercentage = $totalData > 0
+            ? round(($agreement / $totalData) * 100, 2)
             : 0;
         
         return view('admin.perhitungan.compare', compact(

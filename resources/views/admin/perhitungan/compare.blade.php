@@ -66,12 +66,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($hasilList->sortBy('rank_smart') as $item)
+                        @foreach ($hasilList as $item)
                             @php
                                 $rankDiff = abs($item->rank_smart - $item->rank_moora);
                             @endphp
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
+                                <td>{{ ($hasilList->currentPage() - 1) * $hasilList->perPage() + $loop->iteration }}</td>
                                 <td>
                                     <strong>{{ $item->siswa->nisn }}</strong><br>
                                     <small>{{ $item->siswa->nama_siswa }}</small>
@@ -117,21 +117,77 @@
             </div>
 
             <div class="card-footer">
-                <div class="row">
-                    <div class="col-md-6">
-                        {{-- <h6>Keterangan:</h6>
-                        <ul class="small mb-0">
-                            <li><i class="bx bx-check-circle text-success"></i> = Ranking sama</li>
-                            <li><i class="bx bx-error-circle text-warning"></i> = Perbedaan ≤ 2 ranking</li>
-                            <li><i class="bx bx-x-circle text-danger"></i> = Perbedaan > 2 ranking</li>
-                        </ul> --}}
+                @if ($hasilList->hasPages())
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-muted">
+                            Menampilkan {{ $hasilList->firstItem() }} - {{ $hasilList->lastItem() }} dari
+                            {{ $hasilList->total() }} data
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0">
+                                @if ($hasilList->onFirstPage())
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevrons-left"></i></span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $hasilList->url(1) }}"><i
+                                                class="tf-icon bx bx-chevrons-left"></i></a>
+                                    </li>
+                                @endif
+
+                                @if ($hasilList->onFirstPage())
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevron-left"></i></span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $hasilList->previousPageUrl() }}"><i
+                                                class="tf-icon bx bx-chevron-left"></i></a>
+                                    </li>
+                                @endif
+
+                                @foreach ($hasilList->getUrlRange(max(1, $hasilList->currentPage() - 2), min($hasilList->lastPage(), $hasilList->currentPage() + 2)) as $page => $url)
+                                    @if ($page == $hasilList->currentPage())
+                                        <li class="page-item active"><span class="page-link">{{ $page }}</span>
+                                        </li>
+                                    @else
+                                        <li class="page-item"><a class="page-link"
+                                                href="{{ $url }}">{{ $page }}</a></li>
+                                    @endif
+                                @endforeach
+
+                                @if ($hasilList->hasMorePages())
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $hasilList->nextPageUrl() }}"><i
+                                                class="tf-icon bx bx-chevron-right"></i></a>
+                                    </li>
+                                @else
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevron-right"></i></span>
+                                    </li>
+                                @endif
+
+                                @if ($hasilList->hasMorePages())
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $hasilList->url($hasilList->lastPage()) }}"><i
+                                                class="tf-icon bx bx-chevrons-right"></i></a>
+                                    </li>
+                                @else
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="tf-icon bx bx-chevrons-right"></i></span>
+                                    </li>
+                                @endif
+                            </ul>
+                        </nav>
                     </div>
-                    <div class="col-md-6 text-end">
-                        <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
-                            class="btn btn-secondary">
-                            <i class="bx bx-arrow-back"></i> Kembali
-                        </a>
-                    </div>
+                @endif
+
+                <div class="text-end">
+                    <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
+                        class="btn btn-secondary">
+                        <i class="bx bx-arrow-back"></i> Kembali
+                    </a>
                 </div>
             </div>
         </div>
