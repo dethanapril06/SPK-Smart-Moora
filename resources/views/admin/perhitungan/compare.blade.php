@@ -184,7 +184,7 @@
                 @endif
 
                 <div class="text-end">
-                    <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
+                    <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta, 'kelas' => $selectedKelasIds ?? []]) }}"
                         class="btn btn-secondary">
                         <i class="bx bx-arrow-back"></i> Kembali
                     </a>

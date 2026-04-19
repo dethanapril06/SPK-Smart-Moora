@@ -20,7 +20,7 @@
                     Langkah Perhitungan Metode {{ strtoupper($metode) }}
                     <small class="text-muted">- {{ $tahunAjaran->tahun_ajaran }} {{ $tahunAjaran->semester }}</small>
                 </h5>
-                <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
+                <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta, 'kelas' => $selectedKelasIds ?? []]) }}"
                     class="btn btn-sm btn-secondary">
                     <i class="bx bx-arrow-back"></i> Kembali
                 </a>
@@ -243,17 +243,17 @@
 
         <div class="card">
             <div class="card-body text-center">
-                <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
+                <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta, 'kelas' => $selectedKelasIds ?? []]) }}"
                     class="btn btn-secondary">
                     <i class="bx bx-arrow-back"></i> Kembali ke Hasil
                 </a>
                 @if ($metode == 'smart')
-                    <a href="{{ route('admin.perhitungan.steps', ['id_ta' => $tahunAjaran->id_ta, 'metode' => 'moora']) }}"
+                    <a href="{{ route('admin.perhitungan.steps', ['id_ta' => $tahunAjaran->id_ta, 'metode' => 'moora', 'kelas' => $selectedKelasIds ?? []]) }}"
                         class="btn btn-success">
                         <i class="bx bx-detail"></i> Lihat Langkah MOORA
                     </a>
                 @else
-                    <a href="{{ route('admin.perhitungan.steps', ['id_ta' => $tahunAjaran->id_ta, 'metode' => 'smart']) }}"
+                    <a href="{{ route('admin.perhitungan.steps', ['id_ta' => $tahunAjaran->id_ta, 'metode' => 'smart', 'kelas' => $selectedKelasIds ?? []]) }}"
                         class="btn btn-primary">
                         <i class="bx bx-detail"></i> Lihat Langkah SMART
                     </a>
