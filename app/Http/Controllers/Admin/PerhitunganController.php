@@ -24,6 +24,26 @@ class PerhitunganController extends Controller
         $this->smartCalculator = $smartCalculator;
         $this->mooraCalculator = $mooraCalculator;
     }
+
+    /**
+     * Normalize kelas selection, expanding "all" to all kelas ids.
+     */
+    private function resolveKelasSelection($kelasInput): array
+    {
+        if (!is_array($kelasInput)) {
+            $kelasInput = [$kelasInput];
+        }
+
+        $kelasInput = array_values(array_filter($kelasInput, function ($value) {
+            return $value !== null && $value !== '';
+        }));
+
+        if (in_array('all', $kelasInput, true)) {
+            return Kelas::orderBy('nama_kelas')->pluck('id_kelas')->all();
+        }
+
+        return $kelasInput;
+    }
     
     /**
      * Display listing of calculation results
@@ -31,14 +51,9 @@ class PerhitunganController extends Controller
     public function index(Request $request)
     {
         $filterTA = $request->get('tahun_ajaran');
-        $filterKelas = $request->input('kelas', []);
-        if (!is_array($filterKelas)) {
-            $filterKelas = [$filterKelas];
-        }
-        $filterKelas = array_values(array_filter($filterKelas, function ($value) {
-            return $value !== null && $value !== '';
-        }));
+        $filterKelas = $this->resolveKelasSelection($request->input('kelas', []));
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
+        $allKelasSelected = !empty($filterKelas) && count($filterKelas) === Kelas::count();
         
         if (!$filterTA && $tahunAjaranAktif) {
             $filterTA = $tahunAjaranAktif->id_ta;
@@ -91,6 +106,7 @@ class PerhitunganController extends Controller
             'kelasList',
             'filterTA',
             'filterKelas',
+            'allKelasSelected',
             'hasCalculation',
             'studentsWithCompletePenilaian'
         ));
@@ -101,14 +117,25 @@ class PerhitunganController extends Controller
      */
     public function calculate(Request $request)
     {
+        $kelasIds = $this->resolveKelasSelection($request->input('kelas', []));
+
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
             'kelas' => 'required|array|min:1',
-            'kelas.*' => 'required|exists:tb_kelas,id_kelas',
         ]);
+
+        if (empty($kelasIds)) {
+            return redirect()->back()->with('error', 'Pilih minimal 1 kelas atau gunakan opsi Semua Kelas.');
+        }
+
+        $validKelasIds = Kelas::pluck('id_kelas')->all();
+        $invalidKelasIds = array_values(array_diff($kelasIds, $validKelasIds));
+        if (!empty($invalidKelasIds)) {
+            return redirect()->back()->with('error', 'Terdapat kelas yang tidak valid pada pilihan Anda.');
+        }
         
         $id_ta = $validated['id_ta'];
-        $kelasIds = array_values(array_unique($validated['kelas']));
+        $kelasIds = array_values(array_unique($kelasIds));
         
         // Check if there are students with complete penilaian
         $kriteriaCount = Kriteria::count();
@@ -181,13 +208,7 @@ class PerhitunganController extends Controller
             abort(404);
         }
 
-        $selectedKelasIds = $request->input('kelas', []);
-        if (!is_array($selectedKelasIds)) {
-            $selectedKelasIds = [$selectedKelasIds];
-        }
-        $selectedKelasIds = array_values(array_filter($selectedKelasIds, function ($value) {
-            return $value !== null && $value !== '';
-        }));
+        $selectedKelasIds = $this->resolveKelasSelection($request->input('kelas', []));
         
         $tahunAjaran = TahunAjaran::findOrFail($id_ta);
         $kriteriaList = Kriteria::orderBy('kode_kriteria')->get();
@@ -256,13 +277,7 @@ class PerhitunganController extends Controller
      */
     public function compare(Request $request, $id_ta)
     {
-        $selectedKelasIds = $request->input('kelas', []);
-        if (!is_array($selectedKelasIds)) {
-            $selectedKelasIds = [$selectedKelasIds];
-        }
-        $selectedKelasIds = array_values(array_filter($selectedKelasIds, function ($value) {
-            return $value !== null && $value !== '';
-        }));
+        $selectedKelasIds = $this->resolveKelasSelection($request->input('kelas', []));
 
         $tahunAjaran = TahunAjaran::findOrFail($id_ta);
 

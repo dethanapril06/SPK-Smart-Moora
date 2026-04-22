@@ -48,15 +48,18 @@
                             <label class="form-label" for="kelas">Kelas (Pilih untuk Perhitungan)</label>
                             <select class="form-select js-kelas-select2" id="kelas" name="kelas[]" multiple
                                 data-placeholder="Pilih satu atau lebih kelas...">
+                                <option value="all" {{ $allKelasSelected ? 'selected' : '' }}>
+                                    Semua Kelas
+                                </option>
                                 @foreach ($kelasList as $k)
                                     <option value="{{ $k->id_kelas }}"
-                                        {{ in_array($k->id_kelas, $filterKelas ?? []) ? 'selected' : '' }}>
+                                        {{ !$allKelasSelected && in_array($k->id_kelas, $filterKelas ?? []) ? 'selected' : '' }}>
                                         {{ $k->nama_kelas }}
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block mt-1">Wajib pilih minimal 1 kelas sebelum klik Hitung
-                                Sekarang.</small>
+                            <small class="text-muted d-block mt-1">Pilih "Semua Kelas" untuk menghitung seluruh kelas,
+                                atau pilih beberapa kelas secara manual.</small>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">&nbsp;</label>
