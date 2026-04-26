@@ -16,6 +16,14 @@
             </button>
         </div>
 
+        <div class="alert alert-info d-flex" role="alert">
+            <i class="bx bx-info-circle me-2 mt-1"></i>
+            <div>
+                Jika hasil penilaian belum sesuai, silakan lakukan <strong>Agregasi dari Rapor</strong> ulang agar nilai
+                C1-C6 diperbarui berdasarkan data terbaru.
+            </div>
+        </div>
+
         @if (session('success'))
             <div class="alert alert-success alert-dismissible" role="alert">
                 {{ session('success') }}

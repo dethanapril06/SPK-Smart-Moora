@@ -108,12 +108,33 @@ class PenilaianController extends Controller
      */
     private function convertNilaiToSubKriteria($id_kriteria, $nilai_asli)
     {
+        $nilaiReferensi = round($nilai_asli);
+
         $subKriteria = SubKriteria::where('id_kriteria', $id_kriteria)
-            ->where('nilai_awal', '<=', $nilai_asli)
-            ->where('nilai_akhir', '>=', $nilai_asli)
+            ->where('nilai_awal', '<=', $nilaiReferensi)
+            ->where('nilai_akhir', '>=', $nilaiReferensi)
             ->first();
         
         return $subKriteria ? $subKriteria->bobot_subkriteria : null;
+    }
+
+    /**
+     * Calculate average nilai for mapel assigned to student's class.
+     */
+    private function calculateMapelAverage(string $modelClass, $siswa, $id_ta)
+    {
+        $mapelIds = DB::table('tb_kelas_mata_pelajaran')
+            ->where('id_kelas', $siswa->id_kelas)
+            ->pluck('id_mapel');
+
+        $query = $modelClass::where('id_siswa', $siswa->id_siswa)
+            ->where('id_ta', $id_ta);
+
+        if ($mapelIds->isNotEmpty()) {
+            $query->whereIn('id_mapel', $mapelIds);
+        }
+
+        return $query->avg('nilai');
     }
 
     /**
@@ -162,14 +183,10 @@ class PenilaianController extends Controller
             $count = 0;
             foreach ($siswaList as $siswa) {
                 // C1: Rata-rata Nilai Pengetahuan
-                $avgPengetahuan = NilaiPengetahuan::where('id_siswa', $siswa->id_siswa)
-                    ->where('id_ta', $id_ta)
-                    ->avg('nilai');
+                $avgPengetahuan = $this->calculateMapelAverage(NilaiPengetahuan::class, $siswa, $id_ta);
 
                 // C2: Rata-rata Nilai Keterampilan
-                $avgKeterampilan = NilaiKeterampilan::where('id_siswa', $siswa->id_siswa)
-                    ->where('id_ta', $id_ta)
-                    ->avg('nilai');
+                $avgKeterampilan = $this->calculateMapelAverage(NilaiKeterampilan::class, $siswa, $id_ta);
 
                 // C3: Sikap (average of converted spiritual + sosial)
                 $sikap = NilaiSikap::where('id_siswa', $siswa->id_siswa)
@@ -196,10 +213,10 @@ class PenilaianController extends Controller
 
                 // Save to tb_penilaian
                 $mapping = [
-                    'C1' => $avgPengetahuan !== null ? round($avgPengetahuan) : null,
-                    'C2' => $avgKeterampilan !== null ? round($avgKeterampilan) : null,
-                    'C3' => $nilaiSikap !== null ? round($nilaiSikap) : null,
-                    'C4' => $nilaiEkskul !== null ? round($nilaiEkskul) : null,
+                    'C1' => $avgPengetahuan !== null ? round($avgPengetahuan, 2) : null,
+                    'C2' => $avgKeterampilan !== null ? round($avgKeterampilan, 2) : null,
+                    'C3' => $nilaiSikap !== null ? round($nilaiSikap, 2) : null,
+                    'C4' => $nilaiEkskul !== null ? round($nilaiEkskul, 2) : null,
                     'C5' => $totalPoinPelanggaran,
                     'C6' => $totalAbsensi,
                 ];
