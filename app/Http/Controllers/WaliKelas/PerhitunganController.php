@@ -33,7 +33,9 @@ class PerhitunganController extends Controller
         return $kelas;
     }
 
-    public function index(Request $request)
+    // ─── SMART ──────────────────────────────────────────────────────────────────
+
+    public function indexSmart(Request $request)
     {
         $kelas = $this->getKelas();
         $kelasId = $kelas->id_kelas;
@@ -47,15 +49,10 @@ class PerhitunganController extends Controller
 
         $userId = auth()->id();
 
-        // Get hasil akhir hanya untuk siswa di kelas ini & milik wali kelas ini
         $hasilQuery = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
             ->where('user_id', $userId)
-            ->when($filterTA, function ($query, $filterTA) {
-                return $query->where('id_ta', $filterTA);
-            })
-            ->whereHas('siswa', function ($q) use ($kelasId) {
-                $q->where('id_kelas', $kelasId);
-            });
+            ->when($filterTA, fn($q) => $q->where('id_ta', $filterTA))
+            ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
 
         $hasilList = $hasilQuery
             ->orderBy('rank_smart')
@@ -63,14 +60,12 @@ class PerhitunganController extends Controller
             ->withQueryString();
 
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $hasCalculation  = $filterTA && $hasilList->total() > 0;
 
-        $hasCalculation = $filterTA && $hasilList->total() > 0;
-
-        // Siswa dengan penilaian lengkap di kelas ini
         $studentsWithCompletePenilaian = 0;
         if ($filterTA) {
             $kriteriaCount = Kriteria::count();
-            $siswaIds = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa');
+            $siswaIds      = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa');
             $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
                 ->where('id_ta', $filterTA)
                 ->whereIn('id_siswa', $siswaIds)
@@ -79,22 +74,22 @@ class PerhitunganController extends Controller
                 ->count();
         }
 
-        return view('walikelas.perhitungan.index', compact(
+        return view('walikelas.perhitungan.smart.index', compact(
             'hasilList', 'tahunAjaranList', 'filterTA',
             'hasCalculation', 'studentsWithCompletePenilaian', 'kelas'
         ));
     }
 
-    public function calculate(Request $request)
+    public function calculateSmart(Request $request)
     {
-        $kelas = $this->getKelas();
+        $kelas   = $this->getKelas();
         $kelasId = $kelas->id_kelas;
 
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta'
         ]);
 
-        $id_ta = $validated['id_ta'];
+        $id_ta    = $validated['id_ta'];
         $siswaIds = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
 
         $kriteriaCount = Kriteria::count();
@@ -110,87 +105,68 @@ class PerhitunganController extends Controller
         }
 
         DB::beginTransaction();
-
         try {
-            // Calculate SMART & MOORA hanya untuk siswa di kelas ini
             $smartResults = $this->smartCalculator->calculate($id_ta, $siswaIds);
-            $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds);
+            $userId       = auth()->id();
 
-            $userId = auth()->id();
+            // Ambil skor MOORA yang sudah ada agar tidak tertimpa
+            $existingMoora = HasilAkhir::where('id_ta', $id_ta)
+                ->where('user_id', $userId)
+                ->whereIn('id_siswa', $siswaIds)
+                ->pluck('skor_moora', 'id_siswa');
 
-            $mergedResults = [];
-            foreach ($smartResults as $smart) {
-                $moora = collect($mooraResults)->firstWhere('id_siswa', $smart['id_siswa']);
-
-                $mergedResults[] = [
-                    'id_siswa' => $smart['id_siswa'],
-                    'id_ta' => $id_ta,
-                    'user_id' => $userId,
-                    'skor_smart' => $smart['skor_smart'],
-                    'rank_smart' => $smart['rank_smart'],
-                    'skor_moora' => $moora ? $moora['skor_moora'] : null,
-                    'rank_moora' => $moora ? $moora['rank_moora'] : null,
-                ];
-            }
-
-            // Hapus hasil sebelumnya hanya milik wali kelas ini untuk siswa di kelas ini
+            // Hapus hasil SMART sebelumnya
             HasilAkhir::where('id_ta', $id_ta)
                 ->where('user_id', $userId)
                 ->whereIn('id_siswa', $siswaIds)
                 ->delete();
 
-            foreach ($mergedResults as $result) {
-                HasilAkhir::create($result);
+            foreach ($smartResults as $smart) {
+                HasilAkhir::create([
+                    'id_siswa'   => $smart['id_siswa'],
+                    'id_ta'      => $id_ta,
+                    'user_id'    => $userId,
+                    'skor_smart' => $smart['skor_smart'],
+                    'rank_smart' => $smart['rank_smart'],
+                    'skor_moora' => $existingMoora[$smart['id_siswa']] ?? null,
+                    'rank_moora' => null,
+                ]);
             }
 
             DB::commit();
 
-            return redirect()->route('walikelas.perhitungan.index', ['tahun_ajaran' => $id_ta])
-                ->with('success', "Perhitungan berhasil! {$studentsWithCompletePenilaian} siswa telah di-ranking menggunakan metode SMART dan MOORA.");
+            return redirect()->route('walikelas.perhitungan.smart.index', ['tahun_ajaran' => $id_ta])
+                ->with('success', "Perhitungan SMART berhasil! {$studentsWithCompletePenilaian} siswa telah di-ranking.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal melakukan perhitungan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal melakukan perhitungan SMART: ' . $e->getMessage());
         }
     }
 
-    public function showSteps($id_ta, $metode)
+    public function showStepsSmart($id_ta)
     {
-        $kelas = $this->getKelas();
+        $kelas   = $this->getKelas();
         $kelasId = $kelas->id_kelas;
-
-        if (!in_array($metode, ['smart', 'moora'])) {
-            abort(404);
-        }
 
         $tahunAjaran = TahunAjaran::findOrFail($id_ta);
         $kriteriaList = Kriteria::orderBy('kode_kriteria')->get();
-        $siswaIds = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
+        $siswaIds    = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
 
-        if ($metode == 'smart') {
-            $results = $this->smartCalculator->calculate($id_ta, $siswaIds);
-            $detailedSteps = $this->smartCalculator->getDetailedSteps();
-        } else {
-            $results = $this->mooraCalculator->calculate($id_ta, $siswaIds);
-            $detailedSteps = $this->mooraCalculator->getDetailedSteps();
-        }
+        $results       = $this->smartCalculator->calculate($id_ta, $siswaIds);
+        $detailedSteps = $this->smartCalculator->getDetailedSteps();
 
-        $perPage = 10;
-        $stepsCollection = collect($detailedSteps)->values();
+        $perPage          = 10;
+        $stepsCollection  = collect($detailedSteps)->values();
 
         $buildPaginator = function (string $pageName) use ($stepsCollection, $perPage) {
             $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
-
             return new LengthAwarePaginator(
                 $stepsCollection->forPage($currentPage, $perPage)->values(),
                 $stepsCollection->count(),
                 $perPage,
                 $currentPage,
-                [
-                    'path' => request()->url(),
-                    'pageName' => $pageName,
-                    'query' => request()->query(),
-                ]
+                ['path' => request()->url(), 'pageName' => $pageName, 'query' => request()->query()]
             );
         };
 
@@ -199,31 +175,180 @@ class PerhitunganController extends Controller
         $step3Steps = $buildPaginator('step3_page');
         $step4Steps = $buildPaginator('step4_page');
 
-        return view('walikelas.perhitungan.steps', compact(
-            'tahunAjaran', 'metode', 'kriteriaList', 'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps'
+        return view('walikelas.perhitungan.smart.steps', compact(
+            'tahunAjaran', 'kriteriaList', 'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps'
         ));
+    }
+
+    // ─── MOORA ──────────────────────────────────────────────────────────────────
+
+    public function indexMoora(Request $request)
+    {
+        $kelas   = $this->getKelas();
+        $kelasId = $kelas->id_kelas;
+
+        $filterTA        = $request->get('tahun_ajaran');
+        $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
+
+        if (!$filterTA && $tahunAjaranAktif) {
+            $filterTA = $tahunAjaranAktif->id_ta;
+        }
+
+        $userId = auth()->id();
+
+        $hasilQuery = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
+            ->where('user_id', $userId)
+            ->when($filterTA, fn($q) => $q->where('id_ta', $filterTA))
+            ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
+
+        $hasilList = $hasilQuery
+            ->orderBy('rank_moora')
+            ->paginate(10)
+            ->withQueryString();
+
+        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $hasCalculation  = $filterTA && $hasilList->total() > 0;
+
+        $studentsWithCompletePenilaian = 0;
+        if ($filterTA) {
+            $kriteriaCount = Kriteria::count();
+            $siswaIds      = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa');
+            $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
+                ->where('id_ta', $filterTA)
+                ->whereIn('id_siswa', $siswaIds)
+                ->groupBy('id_siswa')
+                ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
+                ->count();
+        }
+
+        return view('walikelas.perhitungan.moora.index', compact(
+            'hasilList', 'tahunAjaranList', 'filterTA',
+            'hasCalculation', 'studentsWithCompletePenilaian', 'kelas'
+        ));
+    }
+
+    public function calculateMoora(Request $request)
+    {
+        $kelas   = $this->getKelas();
+        $kelasId = $kelas->id_kelas;
+
+        $validated = $request->validate([
+            'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta'
+        ]);
+
+        $id_ta    = $validated['id_ta'];
+        $siswaIds = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
+
+        $kriteriaCount = Kriteria::count();
+        $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
+            ->where('id_ta', $id_ta)
+            ->whereIn('id_siswa', $siswaIds)
+            ->groupBy('id_siswa')
+            ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
+            ->count();
+
+        if ($studentsWithCompletePenilaian < 2) {
+            return redirect()->back()->with('error', 'Minimal 2 siswa dengan penilaian lengkap diperlukan untuk perhitungan ranking.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds);
+            $userId       = auth()->id();
+
+            // Ambil skor SMART yang sudah ada agar tidak tertimpa
+            $existingSmart = HasilAkhir::where('id_ta', $id_ta)
+                ->where('user_id', $userId)
+                ->whereIn('id_siswa', $siswaIds)
+                ->pluck('skor_smart', 'id_siswa');
+
+            // Hapus hasil MOORA sebelumnya
+            HasilAkhir::where('id_ta', $id_ta)
+                ->where('user_id', $userId)
+                ->whereIn('id_siswa', $siswaIds)
+                ->delete();
+
+            foreach ($mooraResults as $moora) {
+                HasilAkhir::create([
+                    'id_siswa'   => $moora['id_siswa'],
+                    'id_ta'      => $id_ta,
+                    'user_id'    => $userId,
+                    'skor_smart' => $existingSmart[$moora['id_siswa']] ?? null,
+                    'rank_smart' => null,
+                    'skor_moora' => $moora['skor_moora'],
+                    'rank_moora' => $moora['rank_moora'],
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('walikelas.perhitungan.moora.index', ['tahun_ajaran' => $id_ta])
+                ->with('success', "Perhitungan MOORA berhasil! {$studentsWithCompletePenilaian} siswa telah di-ranking.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal melakukan perhitungan MOORA: ' . $e->getMessage());
+        }
+    }
+
+    public function showStepsMoora($id_ta)
+    {
+        $kelas   = $this->getKelas();
+        $kelasId = $kelas->id_kelas;
+
+        $tahunAjaran  = TahunAjaran::findOrFail($id_ta);
+        $kriteriaList = Kriteria::orderBy('kode_kriteria')->get();
+        $siswaIds     = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
+
+        $results       = $this->mooraCalculator->calculate($id_ta, $siswaIds);
+        $detailedSteps = $this->mooraCalculator->getDetailedSteps();
+
+        $perPage         = 10;
+        $stepsCollection = collect($detailedSteps)->values();
+
+        $buildPaginator = function (string $pageName) use ($stepsCollection, $perPage) {
+            $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
+            return new LengthAwarePaginator(
+                $stepsCollection->forPage($currentPage, $perPage)->values(),
+                $stepsCollection->count(),
+                $perPage,
+                $currentPage,
+                ['path' => request()->url(), 'pageName' => $pageName, 'query' => request()->query()]
+            );
+        };
+
+        $step1Steps = $buildPaginator('step1_page');
+        $step2Steps = $buildPaginator('step2_page');
+        $step3Steps = $buildPaginator('step3_page');
+        $step4Steps = $buildPaginator('step4_page');
+
+        return view('walikelas.perhitungan.moora.steps', compact(
+            'tahunAjaran', 'kriteriaList', 'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps'
+        ));
+    }
+
+    // ─── Legacy combined methods (kept for compare page) ────────────────────────
+
+    public function index(Request $request)
+    {
+        return $this->indexSmart($request);
     }
 
     public function compare($id_ta)
     {
-        $kelas = $this->getKelas();
+        $kelas   = $this->getKelas();
         $kelasId = $kelas->id_kelas;
 
         $tahunAjaran = TahunAjaran::findOrFail($id_ta);
-
-        $userId = auth()->id();
+        $userId      = auth()->id();
 
         $baseQuery = HasilAkhir::query()
             ->where('id_ta', $id_ta)
             ->where('user_id', $userId)
-            ->whereHas('siswa', function ($q) use ($kelasId) {
-                $q->where('id_kelas', $kelasId);
-            });
+            ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
 
         $totalData = (clone $baseQuery)->count();
-        $agreement = (clone $baseQuery)
-            ->whereColumn('rank_smart', 'rank_moora')
-            ->count();
+        $agreement = (clone $baseQuery)->whereColumn('rank_smart', 'rank_moora')->count();
 
         $hasilList = (clone $baseQuery)
             ->with('siswa')

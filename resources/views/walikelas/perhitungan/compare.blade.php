@@ -5,7 +5,7 @@
         <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb breadcrumb-style1 mb-0">
                 <li class="breadcrumb-item"><a href="{{ route('walikelas.dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('walikelas.perhitungan.index') }}">Perhitungan</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('walikelas.perhitungan.smart.index') }}">Perhitungan</a></li>
                 <li class="breadcrumb-item active">Perbandingan</li>
             </ol>
         </nav>
@@ -108,7 +108,7 @@
                 @endif
 
                 <div class="text-end">
-                    <a href="{{ route('walikelas.perhitungan.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
+                    <a href="{{ route('walikelas.perhitungan.smart.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
                         class="btn btn-secondary">
                         <i class="bx bx-arrow-back"></i> Kembali
                     </a>

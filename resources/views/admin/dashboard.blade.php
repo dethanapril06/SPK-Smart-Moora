@@ -204,7 +204,7 @@
                             <i class="bx bx-trophy text-warning"></i> Top 5 Ranking Siswa
                         </h5>
                         @if ($hasCalculation)
-                            <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaranAktif->id_ta]) }}"
+                            <a href="{{ route('admin.perhitungan.smart.index', ['tahun_ajaran' => $tahunAjaranAktif->id_ta]) }}"
                                 class="btn btn-sm btn-label-primary">
                                 Lihat Semua
                             </a>
@@ -274,7 +274,7 @@
                                 @endif
                             </p>
                             @if ($tahunAjaranAktif)
-                                <a href="{{ route('admin.perhitungan.index', ['tahun_ajaran' => $tahunAjaranAktif->id_ta]) }}"
+                                <a href="{{ route('admin.perhitungan.smart.index', ['tahun_ajaran' => $tahunAjaranAktif->id_ta]) }}"
                                     class="btn btn-sm btn-primary">
                                     <i class="bx bx-calculator"></i> Ke Halaman Perhitungan
                                 </a>

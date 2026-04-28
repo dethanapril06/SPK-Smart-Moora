@@ -253,13 +253,23 @@ Route::prefix('wali-kelas')->middleware(['auth', 'check.level:Wali Kelas'])->gro
     Route::post('nilaiabsensi', [\App\Http\Controllers\WaliKelas\NilaiAbsensiController::class, 'store'])
         ->name('walikelas.nilaiabsensi.store');
 
-    // Perhitungan SMART-MOORA (scoped to wali kelas's class)
-    Route::prefix('perhitungan')->name('walikelas.perhitungan.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'index'])->name('index');
-        Route::post('/calculate', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'calculate'])->name('calculate');
-        Route::get('/steps/{id_ta}/{metode}', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'showSteps'])->name('steps');
-        Route::get('/compare/{id_ta}', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'compare'])->name('compare');
+    // Perhitungan SMART (standalone, scoped to wali kelas's class)
+    Route::prefix('perhitungan/smart')->name('walikelas.perhitungan.smart.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'indexSmart'])->name('index');
+        Route::post('/calculate', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'calculateSmart'])->name('calculate');
+        Route::get('/steps/{id_ta}', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'showStepsSmart'])->name('steps');
     });
+
+    // Perhitungan MOORA (standalone, scoped to wali kelas's class)
+    Route::prefix('perhitungan/moora')->name('walikelas.perhitungan.moora.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'indexMoora'])->name('index');
+        Route::post('/calculate', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'calculateMoora'])->name('calculate');
+        Route::get('/steps/{id_ta}', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'showStepsMoora'])->name('steps');
+    });
+
+    // Perbandingan SMART vs MOORA
+    Route::get('perhitungan/compare/{id_ta}', [\App\Http\Controllers\WaliKelas\PerhitunganController::class, 'compare'])
+        ->name('walikelas.perhitungan.compare');
 });
 
 /*

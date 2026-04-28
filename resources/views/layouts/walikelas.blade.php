@@ -139,10 +139,16 @@
 
             <!-- Perhitungan -->
             <li class="menu-header small text-uppercase"><span class="menu-header-text">Perhitungan</span></li>
-            <li class="menu-item {{ request()->is('wali-kelas/perhitungan*') ? 'active' : '' }}">
-              <a href="{{ route('walikelas.perhitungan.index') }}" class="menu-link">
+            <li class="menu-item {{ request()->is('wali-kelas/perhitungan/smart*') ? 'active' : '' }}">
+              <a href="{{ route('walikelas.perhitungan.smart.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-calculator"></i>
-                <div data-i18n="Smart Vs Moora">Smart Vs Moora</div>
+                <div data-i18n="Perhitungan SMART">Perhitungan SMART</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('wali-kelas/perhitungan/moora*') ? 'active' : '' }}">
+              <a href="{{ route('walikelas.perhitungan.moora.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
+                <div data-i18n="Perhitungan MOORA">Perhitungan MOORA</div>
               </a>
             </li>
 
