@@ -99,12 +99,18 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
     Route::get('penilaian/{penilaian}', [\App\Http\Controllers\Admin\PenilaianController::class, 'show'])
         ->name('admin.penilaian.show');
 
-    // Perhitungan SMART-MOORA Routes
-    Route::prefix('perhitungan')->name('admin.perhitungan.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\PerhitunganController::class, 'index'])->name('index');
-        Route::post('/calculate', [\App\Http\Controllers\Admin\PerhitunganController::class, 'calculate'])->name('calculate');
-        Route::get('/steps/{id_ta}/{metode}', [\App\Http\Controllers\Admin\PerhitunganController::class, 'showSteps'])->name('steps');
-        Route::get('/compare/{id_ta}', [\App\Http\Controllers\Admin\PerhitunganController::class, 'compare'])->name('compare');
+    // Perhitungan SMART (standalone)
+    Route::prefix('perhitungan/smart')->name('admin.perhitungan.smart.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PerhitunganController::class, 'indexSmart'])->name('index');
+        Route::post('/calculate', [\App\Http\Controllers\Admin\PerhitunganController::class, 'calculateSmart'])->name('calculate');
+        Route::get('/steps/{id_ta}', [\App\Http\Controllers\Admin\PerhitunganController::class, 'showStepsSmart'])->name('steps');
+    });
+
+    // Perhitungan MOORA (standalone)
+    Route::prefix('perhitungan/moora')->name('admin.perhitungan.moora.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PerhitunganController::class, 'indexMoora'])->name('index');
+        Route::post('/calculate', [\App\Http\Controllers\Admin\PerhitunganController::class, 'calculateMoora'])->name('calculate');
+        Route::get('/steps/{id_ta}', [\App\Http\Controllers\Admin\PerhitunganController::class, 'showStepsMoora'])->name('steps');
     });
 
     // --- Raw Score Input Routes ---

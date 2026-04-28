@@ -139,10 +139,16 @@
 
             <!-- Perhitungan -->
             <li class="menu-header small text-uppercase"><span class="menu-header-text">Perhitungan</span></li>
-            <li class="menu-item {{ request()->is('admin/perhitungan*') ? 'active' : '' }}">
-              <a href="{{ route('admin.perhitungan.index') }}" class="menu-link">
+            <li class="menu-item {{ request()->is('admin/perhitungan/smart*') ? 'active' : '' }}">
+              <a href="{{ route('admin.perhitungan.smart.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-calculator"></i>
-                <div data-i18n="Smart Vs Moora">Smart Vs Moora</div>
+                <div data-i18n="SMART">SMART</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('admin/perhitungan/moora*') ? 'active' : '' }}">
+              <a href="{{ route('admin.perhitungan.moora.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
+                <div data-i18n="MOORA">MOORA</div>
               </a>
             </li>
 
