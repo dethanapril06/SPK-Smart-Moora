@@ -144,7 +144,19 @@
         <!-- Results Table -->
         @if ($hasCalculation)
             <div class="card">
-                <h5 class="card-header">Hasil Ranking SMART & MOORA</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Hasil Ranking SMART & MOORA</h5>
+                    <div>
+                        <a href="{{ route('admin.perhitungan.steps', ['id_ta' => $filterTA, 'metode' => 'smart', 'kelas' => $filterKelas]) }}"
+                            class="btn btn-sm btn-primary">
+                            <i class="bx bx-detail"></i> Langkah SMART
+                        </a>
+                        <a href="{{ route('admin.perhitungan.steps', ['id_ta' => $filterTA, 'metode' => 'moora', 'kelas' => $filterKelas]) }}"
+                            class="btn btn-sm btn-success">
+                            <i class="bx bx-detail"></i> Langkah MOORA
+                        </a>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead class="table-light">
@@ -200,23 +212,8 @@
                 </div>
 
                 @if ($hasilList->count() > 0)
-                    <div class="card-footer">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Total: {{ $hasilList->count() }} siswa</small>
-                            <div>
-                                <a href="{{ route('admin.perhitungan.steps', ['id_ta' => $filterTA, 'metode' => 'smart', 'kelas' => $filterKelas]) }}"
-                                    class="btn btn-sm btn-label-primary">
-                                    <i class="bx bx-detail"></i> Langkah SMART
-                                </a>
-                                <a href="{{ route('admin.perhitungan.steps', ['id_ta' => $filterTA, 'metode' => 'moora', 'kelas' => $filterKelas]) }}"
-                                    class="btn btn-sm btn-label-success">
-                                    <i class="bx bx-detail"></i> Langkah MOORA
-                                </a>
-                            </div>
-                        </div>
-
-                        @if ($hasilList->hasPages())
-                            <hr class="my-3">
+                    @if ($hasilList->hasPages())
+                        <div class="card-footer">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="text-muted">
                                     Menampilkan {{ $hasilList->firstItem() }} - {{ $hasilList->lastItem() }} dari
@@ -283,8 +280,8 @@
                                     </ul>
                                 </nav>
                             </div>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 @endif
             </div>
         @else
