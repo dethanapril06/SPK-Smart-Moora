@@ -307,8 +307,6 @@ Route::prefix('kepala-sekolah')->middleware(['auth', 'check.level:Kepala Sekolah
     // Perangkingan / Hasil Perhitungan
     Route::get('perhitungan', [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'index'])
         ->name('kepalasekolah.perhitungan.index');
-    Route::get('perhitungan/compare/{id_ta}', [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'compare'])
-        ->name('kepalasekolah.perhitungan.compare');
 
     // Report / Export
     Route::get('report/pdf', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportPdf'])

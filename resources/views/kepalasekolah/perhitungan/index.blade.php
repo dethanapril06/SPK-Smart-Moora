@@ -83,12 +83,7 @@
                             class="btn btn-sm btn-success">
                             <i class="bx bxs-file-export"></i> Export Excel
                         </a>
-                        @if ($filterTA)
-                            <a href="{{ route('kepalasekolah.perhitungan.compare', ['id_ta' => $filterTA, 'source' => $source]) }}"
-                                class="btn btn-sm btn-info">
-                                <i class="bx bx-git-compare"></i> Bandingkan
-                            </a>
-                        @endif
+
                     </div>
                 </div>
                 <div class="table-responsive">
