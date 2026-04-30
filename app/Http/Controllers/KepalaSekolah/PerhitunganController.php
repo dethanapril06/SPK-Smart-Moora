@@ -11,51 +11,50 @@ use Illuminate\Http\Request;
 
 class PerhitunganController extends Controller
 {
-    /**
-     * Tampilkan hasil perangkingan dari admin (semua kelas)
-     * dan dari masing-masing wali kelas (per kelas).
-     */
-    public function index(Request $request)
+    // ─── SMART ──────────────────────────────────────────────────────────────────
+
+    public function indexSmart(Request $request)
     {
-        $filterTA = $request->get('tahun_ajaran');
-        $source = $request->get('source', 'admin'); // 'admin' or user_id wali kelas
-        $filterKelas = $request->get('kelas');
+        $filterTA        = $request->get('tahun_ajaran');
+        $source          = $request->get('source', 'admin');
+        $filterKelas     = $request->get('kelas');
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
 
         if (!$filterTA && $tahunAjaranAktif) {
             $filterTA = $tahunAjaranAktif->id_ta;
         }
 
-        $hasilList = collect();
-        $sourceName = 'Admin';
+        $hasilList    = collect();
+        $sourceName   = 'Admin';
         $hasCalculation = false;
 
         if ($filterTA) {
             if ($source === 'admin') {
-                // Ambil dari admin: cari user dengan level Admin yang punya hasil
                 $adminUser = User::where('level', 'Admin')->first();
                 if ($adminUser) {
-                    $hasilQuery = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
+                    $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
                         ->where('id_ta', $filterTA)
                         ->where('user_id', $adminUser->id)
-                        ->when($filterKelas, function ($q, $filterKelas) {
-                            $q->whereHas('siswa', function ($sq) use ($filterKelas) {
-                                $sq->where('id_kelas', $filterKelas);
-                            });
-                        });
-                    $hasilList = $hasilQuery->get()->sortBy('rank_smart');
+                        ->whereNotNull('rank_smart')   // ← hanya ambil yang ada SMART
+                        ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
+                            $sq->where('id_kelas', $filterKelas)
+                        ))
+                        ->get()
+                        ->sortBy('rank_smart');
                 }
                 $sourceName = 'Admin (Semua Siswa)';
             } else {
-                // Ambil dari wali kelas tertentu
                 $waliKelas = User::where('level', 'Wali Kelas')->find($source);
                 if ($waliKelas) {
                     $kelas = Kelas::where('id_wali_kelas', $waliKelas->id)->first();
-                    $hasilQuery = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
+                    $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
                         ->where('id_ta', $filterTA)
-                        ->where('user_id', $waliKelas->id);
-                    $hasilList = $hasilQuery->get()->sortBy('rank_smart');
-                    $sourceName = 'Wali Kelas: ' . $waliKelas->name . ($kelas ? ' (' . $kelas->nama_kelas . ')' : '');
+                        ->where('user_id', $waliKelas->id)
+                        ->whereNotNull('rank_smart')   // ← hanya ambil yang ada SMART
+                        ->get()
+                        ->sortBy('rank_smart');
+                    $sourceName = 'Wali Kelas: ' . $waliKelas->name
+                        . ($kelas ? ' (' . $kelas->nama_kelas . ')' : '');
                 }
             }
 
@@ -63,47 +62,91 @@ class PerhitunganController extends Controller
         }
 
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
-        $kelasList = Kelas::orderBy('nama_kelas')->get();
+        $kelasList       = Kelas::orderBy('nama_kelas')->get();
+        $sourceList      = $this->getSourceList($filterTA, 'smart');
 
-        // Daftar sumber perhitungan (admin + wali kelas yang punya hasil)
-        $sourceList = $this->getSourceList($filterTA);
-
-        return view('kepalasekolah.perhitungan.index', compact(
-            'hasilList',
-            'tahunAjaranList',
-            'kelasList',
-            'filterTA',
-            'filterKelas',
-            'source',
-            'sourceName',
-            'hasCalculation',
-            'sourceList'
+        return view('kepalasekolah.perhitungan.smart.index', compact(
+            'hasilList', 'tahunAjaranList', 'kelasList',
+            'filterTA', 'filterKelas', 'source', 'sourceName',
+            'hasCalculation', 'sourceList'
         ));
     }
 
-    /**
-     * Bandingkan SMART vs MOORA
-     */
+    // ─── MOORA ──────────────────────────────────────────────────────────────────
+
+    public function indexMoora(Request $request)
+    {
+        $filterTA        = $request->get('tahun_ajaran');
+        $source          = $request->get('source', 'admin');
+        $filterKelas     = $request->get('kelas');
+        $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
+
+        if (!$filterTA && $tahunAjaranAktif) {
+            $filterTA = $tahunAjaranAktif->id_ta;
+        }
+
+        $hasilList    = collect();
+        $sourceName   = 'Admin';
+        $hasCalculation = false;
+
+        if ($filterTA) {
+            if ($source === 'admin') {
+                $adminUser = User::where('level', 'Admin')->first();
+                if ($adminUser) {
+                    $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
+                        ->where('id_ta', $filterTA)
+                        ->where('user_id', $adminUser->id)
+                        ->whereNotNull('rank_moora')   // ← hanya ambil yang ada MOORA
+                        ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
+                            $sq->where('id_kelas', $filterKelas)
+                        ))
+                        ->get()
+                        ->sortBy('rank_moora');
+                }
+                $sourceName = 'Admin (Semua Siswa)';
+            } else {
+                $waliKelas = User::where('level', 'Wali Kelas')->find($source);
+                if ($waliKelas) {
+                    $kelas = Kelas::where('id_wali_kelas', $waliKelas->id)->first();
+                    $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
+                        ->where('id_ta', $filterTA)
+                        ->where('user_id', $waliKelas->id)
+                        ->whereNotNull('rank_moora')   // ← hanya ambil yang ada MOORA
+                        ->get()
+                        ->sortBy('rank_moora');
+                    $sourceName = 'Wali Kelas: ' . $waliKelas->name
+                        . ($kelas ? ' (' . $kelas->nama_kelas . ')' : '');
+                }
+            }
+
+            $hasCalculation = $hasilList->count() > 0;
+        }
+
+        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $kelasList       = Kelas::orderBy('nama_kelas')->get();
+        $sourceList      = $this->getSourceList($filterTA, 'moora');
+
+        return view('kepalasekolah.perhitungan.moora.index', compact(
+            'hasilList', 'tahunAjaranList', 'kelasList',
+            'filterTA', 'filterKelas', 'source', 'sourceName',
+            'hasCalculation', 'sourceList'
+        ));
+    }
+
+    // ─── COMPARE ────────────────────────────────────────────────────────────────
+
     public function compare($id_ta, Request $request)
     {
-        $source = $request->get('source', 'admin');
+        $source      = $request->get('source', 'admin');
         $tahunAjaran = TahunAjaran::findOrFail($id_ta);
-
-        $userId = $this->resolveUserId($source);
+        $userId      = $this->resolveUserId($source);
 
         $hasilList = HasilAkhir::with('siswa')
             ->where('id_ta', $id_ta)
-            ->when($userId, function ($q, $userId) {
-                $q->where('user_id', $userId);
-            })
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
             ->get();
 
-        $agreement = 0;
-        foreach ($hasilList as $hasil) {
-            if ($hasil->rank_smart == $hasil->rank_moora) {
-                $agreement++;
-            }
-        }
+        $agreement = $hasilList->filter(fn($h) => $h->rank_smart == $h->rank_moora)->count();
 
         $agreementPercentage = $hasilList->count() > 0
             ? round(($agreement / $hasilList->count()) * 100, 2)
@@ -112,45 +155,41 @@ class PerhitunganController extends Controller
         $sourceName = $this->resolveSourceName($source);
 
         return view('kepalasekolah.perhitungan.compare', compact(
-            'tahunAjaran',
-            'hasilList',
-            'agreementPercentage',
-            'source',
-            'sourceName'
+            'tahunAjaran', 'hasilList', 'agreementPercentage', 'source', 'sourceName'
         ));
     }
 
+    // ─── Helpers ────────────────────────────────────────────────────────────────
+
     /**
-     * Mendapatkan daftar sumber perhitungan yang tersedia
+     * @param string|null $filterTA
+     * @param string      $method  'smart' | 'moora'
      */
-    protected function getSourceList($filterTA)
+    protected function getSourceList($filterTA, string $method = 'smart'): array
     {
-        $sources = [];
+        $sources  = [];
+        $rankCol  = "rank_{$method}";   // rank_smart atau rank_moora
 
         if (!$filterTA) return $sources;
 
-        // Cek admin
         $adminUser = User::where('level', 'Admin')->first();
         if ($adminUser) {
-            $adminHasResult = HasilAkhir::where('id_ta', $filterTA)
+            $exists = HasilAkhir::where('id_ta', $filterTA)
                 ->where('user_id', $adminUser->id)
+                ->whereNotNull($rankCol)
                 ->exists();
-            if ($adminHasResult) {
-                $sources[] = [
-                    'value' => 'admin',
-                    'label' => 'Admin (Semua Siswa)',
-                ];
+            if ($exists) {
+                $sources[] = ['value' => 'admin', 'label' => 'Admin (Semua Siswa)'];
             }
         }
 
-        // Cek setiap wali kelas
-        $waliKelasList = User::where('level', 'Wali Kelas')->get();
-        foreach ($waliKelasList as $wk) {
-            $hasResult = HasilAkhir::where('id_ta', $filterTA)
+        foreach (User::where('level', 'Wali Kelas')->get() as $wk) {
+            $exists = HasilAkhir::where('id_ta', $filterTA)
                 ->where('user_id', $wk->id)
+                ->whereNotNull($rankCol)
                 ->exists();
-            if ($hasResult) {
-                $kelas = Kelas::where('id_wali_kelas', $wk->id)->first();
+            if ($exists) {
+                $kelas     = Kelas::where('id_wali_kelas', $wk->id)->first();
                 $sources[] = [
                     'value' => $wk->id,
                     'label' => $wk->name . ($kelas ? ' (' . $kelas->nama_kelas . ')' : ''),
@@ -161,20 +200,19 @@ class PerhitunganController extends Controller
         return $sources;
     }
 
-    protected function resolveUserId($source)
+    protected function resolveUserId($source): ?int
     {
         if ($source === 'admin') {
             $admin = User::where('level', 'Admin')->first();
-            return $admin ? $admin->id : null;
+            return $admin?->id;
         }
         return (int) $source;
     }
 
-    protected function resolveSourceName($source)
+    protected function resolveSourceName($source): string
     {
-        if ($source === 'admin') {
-            return 'Admin (Semua Siswa)';
-        }
+        if ($source === 'admin') return 'Admin (Semua Siswa)';
+
         $user = User::find($source);
         if ($user) {
             $kelas = Kelas::where('id_wali_kelas', $user->id)->first();

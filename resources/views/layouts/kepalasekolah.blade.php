@@ -138,11 +138,17 @@
             </li>
 
             <!-- Perhitungan -->
-            <li class="menu-header small text-uppercase"><span class="menu-header-text">Hasil Perhitungan</span></li>
-            <li class="menu-item {{ request()->is('kepala-sekolah/perhitungan*') ? 'active' : '' }}">
-              <a href="{{ route('kepalasekolah.perhitungan.index') }}" class="menu-link">
+            <li class="menu-header small text-uppercase"><span class="menu-header-text">Perhitungan</span></li>
+            <li class="menu-item {{ request()->is('kepala-sekolah/perhitungan/smart*') ? 'active' : '' }}">
+              <a href="{{ route('kepalasekolah.perhitungan.smart.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-calculator"></i>
-                <div data-i18n="Perhitungan">Perangkingan</div>
+                <div data-i18n="Perhitungan SMART">Perhitungan SMART</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('kepala-sekolah/perhitungan/moora*') ? 'active' : '' }}">
+              <a href="{{ route('kepalasekolah.perhitungan.moora.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
+                <div data-i18n="Perhitungan MOORA">Perhitungan MOORA</div>
               </a>
             </li>
 

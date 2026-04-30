@@ -305,8 +305,8 @@ Route::prefix('kepala-sekolah')->middleware(['auth', 'check.level:Kepala Sekolah
         ->name('kepalasekolah.penilaian.show');
 
     // Perangkingan / Hasil Perhitungan
-    Route::get('perhitungan', [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'index'])
-        ->name('kepalasekolah.perhitungan.index');
+    Route::get('perhitungan/smart',  [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'indexSmart'])->name('kepalasekolah.perhitungan.smart.index');
+    Route::get('perhitungan/moora',  [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'indexMoora'])->name('kepalasekolah.perhitungan.moora.index');
 
     // Report / Export
     Route::get('report/pdf', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportPdf'])

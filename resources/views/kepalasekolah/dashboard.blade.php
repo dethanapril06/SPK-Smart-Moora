@@ -123,7 +123,7 @@
                         <i class="bx bx-calculator bx-lg text-primary mb-2 d-block"></i>
                         <h3 class="mb-1">{{ $adminCount }}</h3>
                         <p class="text-muted mb-3">Perhitungan oleh Admin</p>
-                        <a href="{{ route('kepalasekolah.perhitungan.index', ['source' => 'admin']) }}"
+                        <a href="{{ route('kepalasekolah.perhitungan.smart.index', ['source' => 'admin']) }}"
                             class="btn btn-sm btn-label-primary">
                             <i class="bx bx-show"></i> Lihat Hasil
                         </a>
@@ -136,7 +136,8 @@
                         <i class="bx bx-user-check bx-lg text-success mb-2 d-block"></i>
                         <h3 class="mb-1">{{ $waliKelasCount }}</h3>
                         <p class="text-muted mb-3">Wali Kelas Sudah Menghitung</p>
-                        <a href="{{ route('kepalasekolah.perhitungan.index') }}" class="btn btn-sm btn-label-success">
+                        <a href="{{ route('kepalasekolah.perhitungan.smart.index', ['source' => 'wali_kelas']) }}"
+                            class="btn btn-sm btn-label-success">
                             <i class="bx bx-show"></i> Lihat Hasil
                         </a>
                     </div>
