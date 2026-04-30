@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\KepalaSekolah;
 
 use App\Http\Controllers\Controller;
-use App\Exports\HasilPerangkinganExport;
+use App\Exports\HasilPerangkinganSmartExport;
+use App\Exports\HasilPerangkinganMooraExport;
 use App\Models\HasilAkhir;
 use App\Models\Kelas;
 use App\Models\TahunAjaran;
@@ -14,74 +15,106 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
-    public function exportPdf(Request $request)
+    // ─── SMART ──────────────────────────────────────────────────────────────────
+
+    public function exportPdfSmart(Request $request)
     {
-        $filterTA = $request->get('tahun_ajaran');
-        $source = $request->get('source', 'admin');
-        $filterKelas = $request->get('kelas');
+        [$filterTA, $source, $filterKelas, $tahunAjaran, $userId, $sourceName] = $this->resolveParams($request);
 
-        $tahunAjaran = TahunAjaran::findOrFail($filterTA);
-        $userId = $this->resolveUserId($source);
-        $sourceName = $this->resolveSourceName($source);
-
-        $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
+        $hasilList = HasilAkhir::with(['siswa.kelas'])
             ->where('id_ta', $filterTA)
-            ->when($userId, function ($q, $userId) {
-                $q->where('user_id', $userId);
-            })
-            ->when($filterKelas, function ($q, $filterKelas) {
-                $q->whereHas('siswa', function ($sq) use ($filterKelas) {
-                    $sq->where('id_kelas', $filterKelas);
-                });
-            })
+            ->whereNotNull('rank_smart')
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
+                $sq->where('id_kelas', $filterKelas)
+            ))
             ->get()
             ->sortBy('rank_smart')
             ->values();
 
-        $pdf = Pdf::loadView('kepalasekolah.report.pdf', compact(
-            'hasilList',
-            'tahunAjaran',
-            'sourceName',
-            'filterKelas'
-        ))->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView('kepalasekolah.report.smart_pdf', compact(
+            'hasilList', 'tahunAjaran', 'sourceName', 'filterKelas'
+        ))->setPaper('a4', 'portrait');
 
-        $filename = 'Laporan_Perangkingan_' . str_replace(['/', '\\', ' '], ['_', '_', '_'], $tahunAjaran->tahun_ajaran) . '_' . $tahunAjaran->semester . '.pdf';
-
-        return $pdf->download($filename);
+        return $pdf->download($this->filename($tahunAjaran, 'SMART', 'pdf'));
     }
 
-    public function exportExcel(Request $request)
+    public function exportExcelSmart(Request $request)
     {
-        $filterTA = $request->get('tahun_ajaran');
-        $source = $request->get('source', 'admin');
-        $filterKelas = $request->get('kelas');
-
-        $tahunAjaran = TahunAjaran::findOrFail($filterTA);
-        $userId = $this->resolveUserId($source);
-        $sourceName = $this->resolveSourceName($source);
-
-        $filename = 'Laporan_Perangkingan_' . str_replace(['/', '\\', ' '], ['_', '_', '_'], $tahunAjaran->tahun_ajaran) . '_' . $tahunAjaran->semester . '.xlsx';
+        [$filterTA, $source, $filterKelas, $tahunAjaran, $userId, $sourceName] = $this->resolveParams($request);
 
         return Excel::download(
-            new HasilPerangkinganExport($filterTA, $userId, $filterKelas, $tahunAjaran, $sourceName),
-            $filename
+            new HasilPerangkinganSmartExport($filterTA, $userId, $filterKelas, $tahunAjaran, $sourceName),
+            $this->filename($tahunAjaran, 'SMART', 'xlsx')
         );
     }
 
-    protected function resolveUserId($source)
+    // ─── MOORA ──────────────────────────────────────────────────────────────────
+
+    public function exportPdfMoora(Request $request)
+    {
+        [$filterTA, $source, $filterKelas, $tahunAjaran, $userId, $sourceName] = $this->resolveParams($request);
+
+        $hasilList = HasilAkhir::with(['siswa.kelas'])
+            ->where('id_ta', $filterTA)
+            ->whereNotNull('rank_moora')
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
+                $sq->where('id_kelas', $filterKelas)
+            ))
+            ->get()
+            ->sortBy('rank_moora')
+            ->values();
+
+        $pdf = Pdf::loadView('kepalasekolah.report.moora_pdf', compact(
+            'hasilList', 'tahunAjaran', 'sourceName', 'filterKelas'
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->download($this->filename($tahunAjaran, 'MOORA', 'pdf'));
+    }
+
+    public function exportExcelMoora(Request $request)
+    {
+        [$filterTA, $source, $filterKelas, $tahunAjaran, $userId, $sourceName] = $this->resolveParams($request);
+
+        return Excel::download(
+            new HasilPerangkinganMooraExport($filterTA, $userId, $filterKelas, $tahunAjaran, $sourceName),
+            $this->filename($tahunAjaran, 'MOORA', 'xlsx')
+        );
+    }
+
+    // ─── Helpers ────────────────────────────────────────────────────────────────
+
+    private function resolveParams(Request $request): array
+    {
+        $filterTA    = $request->get('tahun_ajaran');
+        $source      = $request->get('source', 'admin');
+        $filterKelas = $request->get('kelas');
+        $tahunAjaran = TahunAjaran::findOrFail($filterTA);
+        $userId      = $this->resolveUserId($source);
+        $sourceName  = $this->resolveSourceName($source);
+
+        return [$filterTA, $source, $filterKelas, $tahunAjaran, $userId, $sourceName];
+    }
+
+    private function filename($tahunAjaran, string $method, string $ext): string
+    {
+        $ta = str_replace(['/', '\\', ' '], '_', $tahunAjaran->tahun_ajaran);
+        return "Laporan_{$method}_{$ta}_{$tahunAjaran->semester}.{$ext}";
+    }
+
+    protected function resolveUserId($source): ?int
     {
         if ($source === 'admin') {
-            $admin = User::where('level', 'Admin')->first();
-            return $admin ? $admin->id : null;
+            return User::where('level', 'Admin')->first()?->id;
         }
         return (int) $source;
     }
 
-    protected function resolveSourceName($source)
+    protected function resolveSourceName($source): string
     {
-        if ($source === 'admin') {
-            return 'Admin (Semua Siswa)';
-        }
+        if ($source === 'admin') return 'Admin (Semua Siswa)';
+
         $user = User::find($source);
         if ($user) {
             $kelas = Kelas::where('id_wali_kelas', $user->id)->first();

@@ -88,11 +88,11 @@
                         <i class="bx bx-trophy text-warning"></i> Hasil Ranking MOORA — {{ $sourceName }}
                     </h5>
                     <div class="btn-group">
-                        <a href="{{ route('kepalasekolah.report.pdf', ['tahun_ajaran' => $filterTA, 'source' => $source, 'kelas' => $filterKelas]) }}"
+                        <a href="{{ route('kepalasekolah.report.moora.pdf', ['tahun_ajaran' => $filterTA, 'source' => $source, 'kelas' => $filterKelas]) }}"
                             class="btn btn-sm btn-danger" target="_blank">
                             <i class="bx bxs-file-pdf"></i> Export PDF
                         </a>
-                        <a href="{{ route('kepalasekolah.report.excel', ['tahun_ajaran' => $filterTA, 'source' => $source, 'kelas' => $filterKelas]) }}"
+                        <a href="{{ route('kepalasekolah.report.moora.excel', ['tahun_ajaran' => $filterTA, 'source' => $source, 'kelas' => $filterKelas]) }}"
                             class="btn btn-sm btn-success">
                             <i class="bx bxs-file-export"></i> Export Excel
                         </a>

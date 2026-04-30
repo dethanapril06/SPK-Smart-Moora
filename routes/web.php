@@ -309,8 +309,15 @@ Route::prefix('kepala-sekolah')->middleware(['auth', 'check.level:Kepala Sekolah
     Route::get('perhitungan/moora',  [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'indexMoora'])->name('kepalasekolah.perhitungan.moora.index');
 
     // Report / Export
-    Route::get('report/pdf', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportPdf'])
-        ->name('kepalasekolah.report.pdf');
-    Route::get('report/excel', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportExcel'])
-        ->name('kepalasekolah.report.excel');
+    Route::get('report/smart/pdf', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportPdfSmart'])
+        ->name('kepalasekolah.report.smart.pdf');
+
+    Route::get('report/moora/pdf', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportPdfMoora'])
+        ->name('kepalasekolah.report.moora.pdf');
+
+    Route::get('report/smart/excel', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportExcelSmart'])
+        ->name('kepalasekolah.report.smart.excel');
+
+    Route::get('report/moora/excel', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportExcelMoora'])
+        ->name('kepalasekolah.report.moora.excel');
 });
