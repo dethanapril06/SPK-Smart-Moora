@@ -51,6 +51,7 @@ class PerhitunganController extends Controller
 
         $hasilQuery = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
             ->where('user_id', $userId)
+            ->whereNotNull('skor_smart')
             ->when($filterTA, fn($q) => $q->where('id_ta', $filterTA))
             ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
 
@@ -109,28 +110,26 @@ class PerhitunganController extends Controller
             $smartResults = $this->smartCalculator->calculate($id_ta, $siswaIds);
             $userId       = auth()->id();
 
-            // Ambil skor MOORA yang sudah ada agar tidak tertimpa
-            $existingMoora = HasilAkhir::where('id_ta', $id_ta)
-                ->where('user_id', $userId)
-                ->whereIn('id_siswa', $siswaIds)
-                ->pluck('skor_moora', 'id_siswa');
-
-            // Hapus hasil SMART sebelumnya
             HasilAkhir::where('id_ta', $id_ta)
                 ->where('user_id', $userId)
                 ->whereIn('id_siswa', $siswaIds)
-                ->delete();
+                ->update([
+                    'skor_smart' => null,
+                    'rank_smart' => null,
+                ]);
 
             foreach ($smartResults as $smart) {
-                HasilAkhir::create([
-                    'id_siswa'   => $smart['id_siswa'],
-                    'id_ta'      => $id_ta,
-                    'user_id'    => $userId,
-                    'skor_smart' => $smart['skor_smart'],
-                    'rank_smart' => $smart['rank_smart'],
-                    'skor_moora' => $existingMoora[$smart['id_siswa']] ?? null,
-                    'rank_moora' => null,
-                ]);
+                HasilAkhir::updateOrCreate(
+                    [
+                        'id_siswa' => $smart['id_siswa'],
+                        'id_ta' => $id_ta,
+                        'user_id' => $userId,
+                    ],
+                    [
+                        'skor_smart' => $smart['skor_smart'],
+                        'rank_smart' => $smart['rank_smart'],
+                    ]
+                );
             }
 
             DB::commit();
@@ -198,6 +197,7 @@ class PerhitunganController extends Controller
 
         $hasilQuery = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
             ->where('user_id', $userId)
+            ->whereNotNull('skor_moora')
             ->when($filterTA, fn($q) => $q->where('id_ta', $filterTA))
             ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
 
@@ -256,28 +256,26 @@ class PerhitunganController extends Controller
             $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds);
             $userId       = auth()->id();
 
-            // Ambil skor SMART yang sudah ada agar tidak tertimpa
-            $existingSmart = HasilAkhir::where('id_ta', $id_ta)
-                ->where('user_id', $userId)
-                ->whereIn('id_siswa', $siswaIds)
-                ->pluck('skor_smart', 'id_siswa');
-
-            // Hapus hasil MOORA sebelumnya
             HasilAkhir::where('id_ta', $id_ta)
                 ->where('user_id', $userId)
                 ->whereIn('id_siswa', $siswaIds)
-                ->delete();
+                ->update([
+                    'skor_moora' => null,
+                    'rank_moora' => null,
+                ]);
 
             foreach ($mooraResults as $moora) {
-                HasilAkhir::create([
-                    'id_siswa'   => $moora['id_siswa'],
-                    'id_ta'      => $id_ta,
-                    'user_id'    => $userId,
-                    'skor_smart' => $existingSmart[$moora['id_siswa']] ?? null,
-                    'rank_smart' => null,
-                    'skor_moora' => $moora['skor_moora'],
-                    'rank_moora' => $moora['rank_moora'],
-                ]);
+                HasilAkhir::updateOrCreate(
+                    [
+                        'id_siswa' => $moora['id_siswa'],
+                        'id_ta' => $id_ta,
+                        'user_id' => $userId,
+                    ],
+                    [
+                        'skor_moora' => $moora['skor_moora'],
+                        'rank_moora' => $moora['rank_moora'],
+                    ]
+                );
             }
 
             DB::commit();

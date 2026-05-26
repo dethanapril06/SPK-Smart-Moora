@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\HasilAkhir;
+use App\Models\HasilFinalis;
 use App\Models\TahunAjaran;
 use App\Models\Kelas;
 use App\Models\Kriteria;
 use App\Models\Penilaian;
+use App\Models\Siswa;
+use App\Services\FinalisCalculatorService;
 use App\Services\SmartCalculator;
 use App\Services\MooraCalculator;
 use Illuminate\Http\Request;
@@ -18,11 +21,17 @@ class PerhitunganController extends Controller
 {
     protected $smartCalculator;
     protected $mooraCalculator;
+    protected $finalisCalculator;
     
-    public function __construct(SmartCalculator $smartCalculator, MooraCalculator $mooraCalculator)
+    public function __construct(
+        SmartCalculator $smartCalculator,
+        MooraCalculator $mooraCalculator,
+        FinalisCalculatorService $finalisCalculator
+    )
     {
         $this->smartCalculator = $smartCalculator;
         $this->mooraCalculator = $mooraCalculator;
+        $this->finalisCalculator = $finalisCalculator;
     }
 
     /**
@@ -111,6 +120,7 @@ class PerhitunganController extends Controller
         $id_ta    = $request->input('id_ta');
         $kelasIds = array_values(array_unique($kelasIds));
         $kriteriaCount = Kriteria::count();
+        $allSelectedSiswaIds = Siswa::whereIn('id_kelas', $kelasIds)->pluck('id_siswa')->all();
 
         $siswaQuery = Penilaian::select('id_siswa')
             ->where('id_ta', $id_ta)
@@ -128,19 +138,28 @@ class PerhitunganController extends Controller
         DB::beginTransaction();
         try {
             $smartResults = $this->smartCalculator->calculate($id_ta, $siswaIds);
+            $userId = auth()->id();
 
-            HasilAkhir::where('id_ta', $id_ta)->where('user_id', auth()->id())->delete();
+            HasilAkhir::where('id_ta', $id_ta)
+                ->where('user_id', $userId)
+                ->whereIn('id_siswa', $allSelectedSiswaIds)
+                ->update([
+                    'skor_smart' => null,
+                    'rank_smart' => null,
+                ]);
 
             foreach ($smartResults as $smart) {
-                HasilAkhir::create([
-                    'id_siswa'   => $smart['id_siswa'],
-                    'id_ta'      => $id_ta,
-                    'user_id'    => auth()->id(),
-                    'skor_smart' => $smart['skor_smart'],
-                    'rank_smart' => $smart['rank_smart'],
-                    'skor_moora' => null,
-                    'rank_moora' => null,
-                ]);
+                HasilAkhir::updateOrCreate(
+                    [
+                        'id_siswa' => $smart['id_siswa'],
+                        'id_ta' => $id_ta,
+                        'user_id' => $userId,
+                    ],
+                    [
+                        'skor_smart' => $smart['skor_smart'],
+                        'rank_smart' => $smart['rank_smart'],
+                    ]
+                );
             }
 
             DB::commit();
@@ -260,6 +279,7 @@ class PerhitunganController extends Controller
         $id_ta    = $request->input('id_ta');
         $kelasIds = array_values(array_unique($kelasIds));
         $kriteriaCount = Kriteria::count();
+        $allSelectedSiswaIds = Siswa::whereIn('id_kelas', $kelasIds)->pluck('id_siswa')->all();
 
         $siswaQuery = Penilaian::select('id_siswa')
             ->where('id_ta', $id_ta)
@@ -277,19 +297,28 @@ class PerhitunganController extends Controller
         DB::beginTransaction();
         try {
             $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds);
+            $userId = auth()->id();
 
-            HasilAkhir::where('id_ta', $id_ta)->where('user_id', auth()->id())->delete();
+            HasilAkhir::where('id_ta', $id_ta)
+                ->where('user_id', $userId)
+                ->whereIn('id_siswa', $allSelectedSiswaIds)
+                ->update([
+                    'skor_moora' => null,
+                    'rank_moora' => null,
+                ]);
 
             foreach ($mooraResults as $moora) {
-                HasilAkhir::create([
-                    'id_siswa'   => $moora['id_siswa'],
-                    'id_ta'      => $id_ta,
-                    'user_id'    => auth()->id(),
-                    'skor_smart' => null,
-                    'rank_smart' => null,
-                    'skor_moora' => $moora['skor_moora'],
-                    'rank_moora' => $moora['rank_moora'],
-                ]);
+                HasilAkhir::updateOrCreate(
+                    [
+                        'id_siswa' => $moora['id_siswa'],
+                        'id_ta' => $id_ta,
+                        'user_id' => $userId,
+                    ],
+                    [
+                        'skor_moora' => $moora['skor_moora'],
+                        'rank_moora' => $moora['rank_moora'],
+                    ]
+                );
             }
 
             DB::commit();
@@ -342,5 +371,90 @@ class PerhitunganController extends Controller
             'tahunAjaran', 'kriteriaList',
             'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'selectedKelasIds'
         ));
+    }
+
+    // =========================================================================
+    // Finalis 10 Besar
+    // =========================================================================
+
+    public function indexFinalisSmart(Request $request)
+    {
+        return $this->indexFinalis($request, 'smart');
+    }
+
+    public function indexFinalisMoora(Request $request)
+    {
+        return $this->indexFinalis($request, 'moora');
+    }
+
+    public function calculateFinalisSmart(Request $request)
+    {
+        return $this->calculateFinalis($request, 'smart');
+    }
+
+    public function calculateFinalisMoora(Request $request)
+    {
+        return $this->calculateFinalis($request, 'moora');
+    }
+
+    protected function indexFinalis(Request $request, string $method)
+    {
+        $filterTA = $request->get('tahun_ajaran');
+        $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
+
+        if (!$filterTA && $tahunAjaranAktif) {
+            $filterTA = $tahunAjaranAktif->id_ta;
+        }
+
+        $hasilByTingkat = HasilFinalis::with(['siswa.kelas', 'tahunAjaran'])
+            ->where('user_id', auth()->id())
+            ->where('metode', $method)
+            ->when($filterTA, fn($query) => $query->where('id_ta', $filterTA))
+            ->orderByRaw("FIELD(tingkat, 'X', 'XI', 'XII')")
+            ->orderBy('rank')
+            ->get()
+            ->groupBy('tingkat');
+
+        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $hasCalculation = $filterTA && $hasilByTingkat->flatten(1)->count() > 0;
+        $readiness = $filterTA
+            ? $this->finalisCalculator->getReadiness((int) $filterTA)
+            : [
+                'total_classes' => 0,
+                'eligible_classes' => 0,
+                'eligible_by_tingkat' => ['X' => 0, 'XI' => 0, 'XII' => 0],
+                'skipped_classes' => [],
+                'unknown_classes' => [],
+            ];
+
+        return view('admin.perhitungan.finalis.index', compact(
+            'hasilByTingkat',
+            'tahunAjaranList',
+            'filterTA',
+            'hasCalculation',
+            'readiness',
+            'method'
+        ));
+    }
+
+    protected function calculateFinalis(Request $request, string $method)
+    {
+        $validated = $request->validate([
+            'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+        ]);
+
+        try {
+            $summary = $this->finalisCalculator->calculate(
+                (int) $validated['id_ta'],
+                $method,
+                auth()->id()
+            );
+
+            return redirect()
+                ->route("admin.perhitungan.finalis.{$method}.index", ['tahun_ajaran' => $validated['id_ta']])
+                ->with('success', 'Perhitungan 10 Besar ' . strtoupper($method) . " berhasil! {$summary['candidate_count']} kandidat dari 3 besar tiap kelas telah dihitung ulang.");
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghitung 10 Besar ' . strtoupper($method) . ': ' . $e->getMessage());
+        }
     }
 }

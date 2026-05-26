@@ -76,8 +76,19 @@ class DashboardController extends Controller
                     $q->where('id_kelas', $kelasId);
                 });
 
-            $topSmart = (clone $baseQuery)->orderBy('rank_smart')->limit(5)->get();
-            $topMoora = (clone $baseQuery)->orderBy('rank_moora')->limit(5)->get();
+            $topSmart = (clone $baseQuery)
+                ->whereNotNull('rank_smart')
+                ->whereNotNull('skor_smart')
+                ->orderBy('rank_smart')
+                ->limit(5)
+                ->get();
+
+            $topMoora = (clone $baseQuery)
+                ->whereNotNull('rank_moora')
+                ->whereNotNull('skor_moora')
+                ->orderBy('rank_moora')
+                ->limit(5)
+                ->get();
         }
 
         // Pelanggaran terbaru (5 terakhir, kelas saja)

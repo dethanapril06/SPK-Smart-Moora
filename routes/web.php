@@ -113,6 +113,14 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
         Route::get('/steps/{id_ta}', [\App\Http\Controllers\Admin\PerhitunganController::class, 'showStepsMoora'])->name('steps');
     });
 
+    // Finalis 10 Besar SMART & MOORA
+    Route::prefix('perhitungan/finalis')->name('admin.perhitungan.finalis.')->group(function () {
+        Route::get('/smart', [\App\Http\Controllers\Admin\PerhitunganController::class, 'indexFinalisSmart'])->name('smart.index');
+        Route::post('/smart/calculate', [\App\Http\Controllers\Admin\PerhitunganController::class, 'calculateFinalisSmart'])->name('smart.calculate');
+        Route::get('/moora', [\App\Http\Controllers\Admin\PerhitunganController::class, 'indexFinalisMoora'])->name('moora.index');
+        Route::post('/moora/calculate', [\App\Http\Controllers\Admin\PerhitunganController::class, 'calculateFinalisMoora'])->name('moora.calculate');
+    });
+
     // --- Raw Score Input Routes ---
 
     // Mata Pelajaran Management

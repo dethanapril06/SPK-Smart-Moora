@@ -196,71 +196,92 @@
         @endif
 
         <div class="row">
-            {{-- Top 5 Siswa Ranking --}}
+            {{-- Top 10 Finalis Ranking --}}
             <div class="col-lg-8 mb-4">
                 <div class="card h-100">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <h5 class="card-title m-0">
-                            <i class="bx bx-trophy text-warning"></i> Top 5 Ranking Siswa
+                            <i class="bx bx-trophy text-warning"></i> Top 10 Ranking Finalis
                         </h5>
                         @if ($hasCalculation)
-                            <a href="{{ route('admin.perhitungan.smart.index', ['tahun_ajaran' => $tahunAjaranAktif->id_ta]) }}"
+                            <a href="{{ route('admin.perhitungan.finalis.smart.index', ['tahun_ajaran' => $tahunAjaranAktif->id_ta]) }}"
                                 class="btn btn-sm btn-label-primary">
                                 Lihat Semua
                             </a>
                         @endif
                     </div>
-                    @if ($topSiswa->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="text-center" width="60">Rank</th>
-                                        <th>NISN / Nama Siswa</th>
-                                        <th class="text-center">Kelas</th>
-                                        <th class="text-center">Skor SMART</th>
-                                        <th class="text-center">Skor MOORA</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($topSiswa as $item)
-                                        <tr>
-                                            <td class="text-center">
-                                                @if ($item->rank_smart == 1)
-                                                    <span class="badge bg-warning"><i class="bx bx-trophy"></i>
-                                                        1</span>
-                                                @elseif($item->rank_smart == 2)
-                                                    <span class="badge bg-secondary">2</span>
-                                                @elseif($item->rank_smart == 3)
-                                                    <span class="badge bg-label-warning">3</span>
-                                                @else
-                                                    <span class="badge bg-label-dark">{{ $item->rank_smart }}</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <strong>{{ $item->siswa->nisn }}</strong><br>
-                                                <small>{{ $item->siswa->nama_siswa }}</small>
-                                            </td>
-                                            <td class="text-center">
-                                                @if ($item->siswa->kelas)
-                                                    <span
-                                                        class="badge bg-label-info">{{ $item->siswa->kelas->nama_kelas }}</span>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                <strong
-                                                    class="text-primary">{{ number_format($item->skor_smart, 4) }}</strong>
-                                            </td>
-                                            <td class="text-center">
-                                                <strong
-                                                    class="text-success">{{ number_format($item->skor_moora, 4) }}</strong>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                    @if ($topFinalisSmartByTingkat->flatten(1)->count() > 0 || $topFinalisMooraByTingkat->flatten(1)->count() > 0)
+                        @php $tingkatList = ['X', 'XI', 'XII']; @endphp
+                        <div class="nav-align-top">
+                            <ul class="nav nav-tabs" role="tablist">
+                                @foreach ($tingkatList as $index => $tingkat)
+                                    <li class="nav-item" role="presentation">
+                                        <button type="button" class="nav-link {{ $index === 0 ? 'active' : '' }}"
+                                            role="tab" data-bs-toggle="tab"
+                                            data-bs-target="#dashboard-finalis-{{ strtolower($tingkat) }}">
+                                            Kelas {{ $tingkat }}
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                            <div class="tab-content p-0">
+                                @foreach ($tingkatList as $index => $tingkat)
+                                    @php
+                                        $topFinalisSmart = $topFinalisSmartByTingkat->get($tingkat, collect());
+                                        $topFinalisMoora = $topFinalisMooraByTingkat->get($tingkat, collect());
+                                    @endphp
+                                    <div class="tab-pane fade {{ $index === 0 ? 'show active' : '' }}"
+                                        id="dashboard-finalis-{{ strtolower($tingkat) }}" role="tabpanel">
+                                        <div class="table-responsive top-finalis-scroll">
+                                            <table class="table table-hover top-finalis-table mb-0">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th colspan="4" class="text-center text-primary border-end">SMART</th>
+                                                        <th colspan="4" class="text-center text-success">MOORA</th>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="text-center" width="70">Rank</th>
+                                                        <th>Siswa</th>
+                                                        <th class="text-center">Kelas</th>
+                                                        <th class="text-center border-end">Skor</th>
+                                                        <th class="text-center" width="70">Rank</th>
+                                                        <th>Siswa</th>
+                                                        <th class="text-center">Kelas</th>
+                                                        <th class="text-center">Skor</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for ($i = 0; $i < 10; $i++)
+                                                        @php
+                                                            $smart = $topFinalisSmart->get($i);
+                                                            $moora = $topFinalisMoora->get($i);
+                                                        @endphp
+                                                        <tr>
+                                                            @if ($smart)
+                                                                <td class="text-center"><span class="badge {{ $smart->rank == 1 ? 'bg-warning' : 'bg-label-dark' }}">{{ $smart->rank }}</span></td>
+                                                                <td><strong>{{ $smart->siswa->nisn }}</strong><br><small>{{ $smart->siswa->nama_siswa }}</small></td>
+                                                                <td class="text-center"><span class="badge bg-label-info">{{ $smart->siswa->kelas->nama_kelas ?? '-' }}</span></td>
+                                                                <td class="text-center border-end"><strong class="text-primary">{{ number_format($smart->skor, 4) }}</strong></td>
+                                                            @else
+                                                                <td class="text-center text-muted">-</td><td class="text-muted">-</td><td class="text-center text-muted">-</td><td class="text-center border-end text-muted">-</td>
+                                                            @endif
+
+                                                            @if ($moora)
+                                                                <td class="text-center"><span class="badge {{ $moora->rank == 1 ? 'bg-warning' : 'bg-label-dark' }}">{{ $moora->rank }}</span></td>
+                                                                <td><strong>{{ $moora->siswa->nisn }}</strong><br><small>{{ $moora->siswa->nama_siswa }}</small></td>
+                                                                <td class="text-center"><span class="badge bg-label-info">{{ $moora->siswa->kelas->nama_kelas ?? '-' }}</span></td>
+                                                                <td class="text-center"><strong class="text-success">{{ number_format($moora->skor, 4) }}</strong></td>
+                                                            @else
+                                                                <td class="text-center text-muted">-</td><td class="text-muted">-</td><td class="text-center text-muted">-</td><td class="text-center text-muted">-</td>
+                                                            @endif
+                                                        </tr>
+                                                    @endfor
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     @else
                         <div class="card-body text-center py-5">
@@ -274,9 +295,9 @@
                                 @endif
                             </p>
                             @if ($tahunAjaranAktif)
-                                <a href="{{ route('admin.perhitungan.smart.index', ['tahun_ajaran' => $tahunAjaranAktif->id_ta]) }}"
+                                <a href="{{ route('admin.perhitungan.finalis.smart.index', ['tahun_ajaran' => $tahunAjaranAktif->id_ta]) }}"
                                     class="btn btn-sm btn-primary">
-                                    <i class="bx bx-calculator"></i> Ke Halaman Perhitungan
+                                    <i class="bx bx-calculator"></i> Ke Halaman 10 Besar
                                 </a>
                             @endif
                         </div>
@@ -294,27 +315,29 @@
                     </div>
                     <div class="card-body">
                         @if ($siswaPerKelas->count() > 0)
-                            @foreach ($siswaPerKelas as $kelas)
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-label-primary me-2">
-                                            <i class="bx bx-chalkboard"></i>
-                                        </span>
-                                        <span class="fw-semibold">{{ $kelas->nama_kelas }}</span>
+                            <div class="siswa-per-kelas-scroll">
+                                @foreach ($siswaPerKelas as $kelas)
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-label-primary me-2">
+                                                <i class="bx bx-chalkboard"></i>
+                                            </span>
+                                            <span class="fw-semibold">{{ $kelas->nama_kelas }}</span>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-label-info rounded-pill">{{ $kelas->siswa_count }}
+                                                siswa</span>
+                                        </div>
                                     </div>
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-label-info rounded-pill">{{ $kelas->siswa_count }}
-                                            siswa</span>
+                                    <div class="progress mb-3" style="height: 6px;">
+                                        <div class="progress-bar bg-primary" role="progressbar"
+                                            style="width: {{ $kelas->kapasitas > 0 ? round(($kelas->siswa_count / $kelas->kapasitas) * 100) : 0 }}%"
+                                            aria-valuenow="{{ $kelas->siswa_count }}" aria-valuemin="0"
+                                            aria-valuemax="{{ $kelas->kapasitas }}">
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="progress mb-3" style="height: 6px;">
-                                    <div class="progress-bar bg-primary" role="progressbar"
-                                        style="width: {{ $kelas->kapasitas > 0 ? round(($kelas->siswa_count / $kelas->kapasitas) * 100) : 0 }}%"
-                                        aria-valuenow="{{ $kelas->siswa_count }}" aria-valuemin="0"
-                                        aria-valuemax="{{ $kelas->kapasitas }}">
-                                    </div>
-                                </div>
-                            @endforeach
+                                @endforeach
+                            </div>
                         @else
                             <div class="text-center py-4">
                                 <i class="bx bx-chalkboard bx-lg text-muted mb-2 d-block"></i>
@@ -440,3 +463,27 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <style>
+        .siswa-per-kelas-scroll {
+            max-height: 730px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .top-finalis-scroll {
+            overflow-x: auto;
+        }
+
+        .top-finalis-table {
+            min-width: 1180px;
+        }
+
+        .top-finalis-table th,
+        .top-finalis-table td {
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+    </style>
+@endpush

@@ -166,7 +166,7 @@
                                     <tbody>
                                         @foreach ($topMoora as $item)
                                             <tr>
-                                                <td><span class="badge bg-label-primary">{{ $item->rank_moora }}</span>
+                                                <td><span class="badge bg-label-success">{{ $item->rank_moora }}</span>
                                                 </td>
                                                 <td><small class="fw-semibold">{{ $item->siswa->nama_siswa }}</small></td>
                                                 <td><small>{{ number_format($item->skor_moora, 4) }}</small></td>

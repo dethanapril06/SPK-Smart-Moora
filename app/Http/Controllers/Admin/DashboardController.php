@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\HasilAkhir;
+use App\Models\HasilFinalis;
 use App\Models\Kelas;
 use App\Models\Kriteria;
 use App\Models\Penilaian;
@@ -46,21 +46,33 @@ class DashboardController extends Controller
             // Total pelanggaran di TA aktif
             $totalPelanggaran = RiwayatPelanggaran::where('id_ta', $tahunAjaranAktif->id_ta)->count();
 
-            // Cek apakah sudah ada perhitungan milik admin ini
-            $hasCalculation = HasilAkhir::where('id_ta', $tahunAjaranAktif->id_ta)
+            // Cek apakah sudah ada perhitungan finalis milik admin ini
+            $hasCalculation = HasilFinalis::where('id_ta', $tahunAjaranAktif->id_ta)
                 ->where('user_id', auth()->id())
                 ->exists();
         }
 
-        // Top 5 siswa berdasarkan SMART ranking (TA aktif)
-        $topSiswa = collect();
+        // Top 10 finalis berdasarkan hasil 10 besar SMART dan MOORA (TA aktif)
+        $topFinalisSmartByTingkat = collect();
+        $topFinalisMooraByTingkat = collect();
         if ($tahunAjaranAktif && $hasCalculation) {
-            $topSiswa = HasilAkhir::with(['siswa.kelas'])
+            $topFinalisSmartByTingkat = HasilFinalis::with(['siswa.kelas'])
                 ->where('id_ta', $tahunAjaranAktif->id_ta)
                 ->where('user_id', auth()->id())
-                ->orderBy('rank_smart')
-                ->limit(5)
-                ->get();
+                ->where('metode', 'smart')
+                ->orderByRaw("FIELD(tingkat, 'X', 'XI', 'XII')")
+                ->orderBy('rank')
+                ->get()
+                ->groupBy('tingkat');
+
+            $topFinalisMooraByTingkat = HasilFinalis::with(['siswa.kelas'])
+                ->where('id_ta', $tahunAjaranAktif->id_ta)
+                ->where('user_id', auth()->id())
+                ->where('metode', 'moora')
+                ->orderByRaw("FIELD(tingkat, 'X', 'XI', 'XII')")
+                ->orderBy('rank')
+                ->get()
+                ->groupBy('tingkat');
         }
 
         // Distribusi siswa per kelas
@@ -91,7 +103,8 @@ class DashboardController extends Controller
             'siswaBelumDinilai',
             'totalPelanggaran',
             'hasCalculation',
-            'topSiswa',
+            'topFinalisSmartByTingkat',
+            'topFinalisMooraByTingkat',
             'siswaPerKelas',
             'pelanggaranTerbaru',
             'kriteriaList',
