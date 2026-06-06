@@ -155,6 +155,10 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
         ->name('admin.nilaiekstrakurikuler.store');
     Route::get('nilaiekstrakurikuler/get-ekskul', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'getEkskul'])
         ->name('admin.nilaiekstrakurikuler.getEkskul');
+    Route::get('nilaiekstrakurikuler/{id}/edit', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'edit'])
+        ->name('admin.nilaiekstrakurikuler.edit');
+    Route::put('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'update'])
+        ->name('admin.nilaiekstrakurikuler.update');
     Route::delete('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'destroy'])
         ->name('admin.nilaiekstrakurikuler.destroy');
 

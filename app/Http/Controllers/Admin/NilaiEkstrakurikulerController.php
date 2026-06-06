@@ -98,6 +98,13 @@ class NilaiEkstrakurikulerController extends Controller
             }
             DB::commit();
 
+            if ($request->boolean('redirect_to_edit')) {
+                return redirect()->route('admin.nilaiekstrakurikuler.edit', [
+                    'id' => $validated['id_siswa'],
+                    'tahun_ajaran' => $validated['id_ta'],
+                ])->with('success', 'Nilai ekstrakurikuler berhasil ditambahkan.');
+            }
+
             return redirect()->route('admin.nilaiekstrakurikuler.index', [
                 'tahun_ajaran' => $validated['id_ta'],
                 'kelas' => $request->get('id_kelas'),
@@ -106,6 +113,41 @@ class NilaiEkstrakurikulerController extends Controller
             DB::rollBack();
             return redirect()->back()->withInput()->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
+    }
+
+    public function edit(Request $request, $id)
+    {
+        $siswa = Siswa::with('kelas')->findOrFail($id);
+        $selectedTA = $request->get('tahun_ajaran', $siswa->id_ta);
+        $tahunAjaran = TahunAjaran::findOrFail($selectedTA);
+        $ekskulList = NilaiEkstrakurikuler::where('id_siswa', $siswa->id_siswa)
+            ->where('id_ta', $selectedTA)
+            ->orderBy('nama_ekskul')
+            ->get();
+
+        return view('admin.nilaiekstrakurikuler.edit', compact(
+            'siswa', 'tahunAjaran', 'ekskulList', 'selectedTA'
+        ));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $ekskul = NilaiEkstrakurikuler::with('siswa')->findOrFail($id);
+
+        $validated = $request->validate([
+            'nama_ekskul' => 'required|string|max:50',
+            'predikat' => 'required|in:Sangat Baik,Baik,Cukup,Kurang',
+        ], [
+            'nama_ekskul.required' => 'Nama ekstrakurikuler wajib diisi.',
+            'predikat.required' => 'Predikat wajib dipilih.',
+        ]);
+
+        $ekskul->update($validated);
+
+        return redirect()->route('admin.nilaiekstrakurikuler.edit', [
+            'id' => $ekskul->id_siswa,
+            'tahun_ajaran' => $ekskul->id_ta,
+        ])->with('success', 'Nilai ekstrakurikuler berhasil diperbarui.');
     }
 
     public function destroy($id)

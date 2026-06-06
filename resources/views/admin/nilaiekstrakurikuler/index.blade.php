@@ -108,8 +108,7 @@
                                                 @if ($siswa->nilaiEkstrakurikuler->count() > 1)
                                                     {{ $idx + 1 }}.
                                                 @endif
-                                                <span
-                                                    class="badge bg-label-{{ $ekskul->predikat == 'Sangat Baik' ? 'success' : ($ekskul->predikat == 'Baik' ? 'primary' : ($ekskul->predikat == 'Cukup' ? 'warning' : 'danger')) }}">
+                                                <span>
                                                     {{ $ekskul->predikat }}
                                                 </span>
                                             </div>
@@ -119,18 +118,14 @@
                                     </td>
                                     <td>
                                         @if ($siswa->nilaiEkstrakurikuler->count() > 0)
-                                            @foreach ($siswa->nilaiEkstrakurikuler as $ekskul)
-                                                <form
-                                                    action="{{ route('admin.nilaiekstrakurikuler.destroy', $ekskul->id_nilai_ekskul) }}"
-                                                    method="POST" class="d-inline">
-                                                    @csrf @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-icon btn-label-danger mb-1"
-                                                        onclick="return confirm('Yakin hapus {{ $ekskul->nama_ekskul }}?')"
-                                                        title="Hapus {{ $ekskul->nama_ekskul }}">
-                                                        <i class="bx bx-trash"></i>
-                                                    </button>
-                                                </form>
-                                            @endforeach
+                                            <a href="{{ route('admin.nilaiekstrakurikuler.edit', [
+                                                'id' => $siswa->id_siswa,
+                                                'tahun_ajaran' => $filterTA,
+                                            ]) }}"
+                                                class="btn btn-sm btn-icon btn-label-warning"
+                                                title="Kelola ekstrakurikuler {{ $siswa->nama_siswa }}">
+                                                <i class="bx bx-edit"></i>
+                                            </a>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
