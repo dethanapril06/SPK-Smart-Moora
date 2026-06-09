@@ -111,6 +111,13 @@ class NilaiEkstrakurikulerController extends Controller
             }
             DB::commit();
 
+            if ($request->boolean('redirect_to_edit')) {
+                return redirect()->route('walikelas.nilaiekstrakurikuler.edit', [
+                    'id' => $validated['id_siswa'],
+                    'tahun_ajaran' => $validated['id_ta'],
+                ])->with('success', 'Nilai ekstrakurikuler berhasil ditambahkan.');
+            }
+
             return redirect()->route('walikelas.nilaiekstrakurikuler.index', [
                 'tahun_ajaran' => $validated['id_ta'],
             ])->with('success', 'Nilai ekstrakurikuler berhasil ditambahkan.');
@@ -131,5 +138,65 @@ class NilaiEkstrakurikulerController extends Controller
         $ekskul->delete();
 
         return redirect()->back()->with('success', 'Data ekstrakurikuler berhasil dihapus.');
+    }
+
+    public function edit(Request $request, $id)
+    {
+        $kelas = $this->getKelas();
+        $siswa = Siswa::with('kelas')->findOrFail($id);
+        abort_if($siswa->id_kelas !== $kelas->id_kelas, 403);
+
+        $selectedTA = $request->get('tahun_ajaran', $siswa->id_ta);
+        $tahunAjaran = TahunAjaran::findOrFail($selectedTA);
+        $ekskulList = NilaiEkstrakurikuler::where('id_siswa', $siswa->id_siswa)
+            ->where('id_ta', $selectedTA)
+            ->orderBy('nama_ekskul')
+            ->get();
+
+        return view('walikelas.nilaiekstrakurikuler.edit', compact(
+            'siswa', 'tahunAjaran', 'ekskulList', 'selectedTA', 'kelas'
+        ));
+    }
+
+    public function updateAll(Request $request, $siswa_id)
+    {
+        $kelas = $this->getKelas();
+        $siswa = Siswa::findOrFail($siswa_id);
+        abort_if($siswa->id_kelas !== $kelas->id_kelas, 403);
+
+        $id_ta = $request->input('id_ta');
+
+        $validated = $request->validate([
+            'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'ekskul' => 'required|array',
+            'ekskul.*.nama_ekskul' => 'required|string|max:100',
+            'ekskul.*.predikat' => 'required|in:Sangat Baik,Baik,Cukup,Kurang',
+        ], [
+            'ekskul.*.nama_ekskul.required' => 'Nama ekstrakurikuler wajib diisi.',
+            'ekskul.*.predikat.required' => 'Predikat wajib dipilih.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            foreach ($validated['ekskul'] as $id => $item) {
+                $ekskul = NilaiEkstrakurikuler::where('id_siswa', $siswa_id)
+                    ->where('id_ta', $id_ta)
+                    ->findOrFail($id);
+
+                $ekskul->update([
+                    'nama_ekskul' => $item['nama_ekskul'],
+                    'predikat' => $item['predikat'],
+                ]);
+            }
+            DB::commit();
+
+            return redirect()->route('walikelas.nilaiekstrakurikuler.edit', [
+                'id' => $siswa_id,
+                'tahun_ajaran' => $id_ta,
+            ])->with('success', 'Semua nilai ekstrakurikuler berhasil diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
+        }
     }
 }

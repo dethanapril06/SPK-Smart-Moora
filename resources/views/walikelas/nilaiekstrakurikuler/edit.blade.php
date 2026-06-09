@@ -1,16 +1,15 @@
-@extends('layouts.admin')
+@extends('layouts.walikelas')
 @section('title', 'Kelola Nilai Ekstrakurikuler')
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
         <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb breadcrumb-style1 mb-0">
                 <li class="breadcrumb-item">
-                    <a href="{{ route('admin.dashboard') }}">Dashboard</a>
+                    <a href="{{ route('walikelas.dashboard') }}">Dashboard</a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{{ route('admin.nilaiekstrakurikuler.index', [
+                    <a href="{{ route('walikelas.nilaiekstrakurikuler.index', [
                         'tahun_ajaran' => $selectedTA,
-                        'kelas' => $siswa->id_kelas,
                     ]) }}">Nilai Ekstrakurikuler</a>
                 </li>
                 <li class="breadcrumb-item active">Kelola</li>
@@ -73,7 +72,7 @@
             <h5 class="card-header">Ekstrakurikuler Terdaftar</h5>
             <div class="card-body">
                 @if ($ekskulList->count() > 0)
-                    <form action="{{ route('admin.nilaiekstrakurikuler.updateAll', $siswa->id_siswa) }}" method="POST">
+                    <form action="{{ route('walikelas.nilaiekstrakurikuler.updateAll', $siswa->id_siswa) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="id_ta" value="{{ $selectedTA }}">
@@ -140,7 +139,7 @@
                     {{-- Hidden delete forms defined outside the update form to avoid nested forms --}}
                     @foreach ($ekskulList as $ekskul)
                         <form id="delete-ekskul-{{ $ekskul->id_nilai_ekskul }}"
-                            action="{{ route('admin.nilaiekstrakurikuler.destroy', $ekskul->id_nilai_ekskul) }}"
+                            action="{{ route('walikelas.nilaiekstrakurikuler.destroy', $ekskul->id_nilai_ekskul) }}"
                             method="POST" class="d-none">
                             @csrf
                             @method('DELETE')
@@ -155,10 +154,9 @@
         <div class="card">
             <h5 class="card-header">Tambah Ekstrakurikuler Baru</h5>
             <div class="card-body">
-                <form action="{{ route('admin.nilaiekstrakurikuler.store') }}" method="POST">
+                <form action="{{ route('walikelas.nilaiekstrakurikuler.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="id_ta" value="{{ $selectedTA }}">
-                    <input type="hidden" name="id_kelas" value="{{ $siswa->id_kelas }}">
                     <input type="hidden" name="id_siswa" value="{{ $siswa->id_siswa }}">
                     <input type="hidden" name="redirect_to_edit" value="1">
 
@@ -197,9 +195,8 @@
 
                 <hr class="my-4">
 
-                <a href="{{ route('admin.nilaiekstrakurikuler.index', [
+                <a href="{{ route('walikelas.nilaiekstrakurikuler.index', [
                     'tahun_ajaran' => $selectedTA,
-                    'kelas' => $siswa->id_kelas,
                 ]) }}" class="btn btn-secondary">
                     <i class="bx bx-arrow-back me-1"></i> Kembali
                 </a>

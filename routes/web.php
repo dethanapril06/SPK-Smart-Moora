@@ -157,8 +157,8 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
         ->name('admin.nilaiekstrakurikuler.getEkskul');
     Route::get('nilaiekstrakurikuler/{id}/edit', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'edit'])
         ->name('admin.nilaiekstrakurikuler.edit');
-    Route::put('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'update'])
-        ->name('admin.nilaiekstrakurikuler.update');
+    Route::put('nilaiekstrakurikuler/update-all/{siswa_id}', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'updateAll'])
+        ->name('admin.nilaiekstrakurikuler.updateAll');
     Route::delete('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\Admin\NilaiEkstrakurikulerController::class, 'destroy'])
         ->name('admin.nilaiekstrakurikuler.destroy');
 
@@ -256,6 +256,10 @@ Route::prefix('wali-kelas')->middleware(['auth', 'check.level:Wali Kelas'])->gro
         ->name('walikelas.nilaiekstrakurikuler.store');
     Route::get('nilaiekstrakurikuler/get-ekskul', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'getEkskul'])
         ->name('walikelas.nilaiekstrakurikuler.getEkskul');
+    Route::get('nilaiekstrakurikuler/{id}/edit', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'edit'])
+        ->name('walikelas.nilaiekstrakurikuler.edit');
+    Route::put('nilaiekstrakurikuler/update-all/{siswa_id}', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'updateAll'])
+        ->name('walikelas.nilaiekstrakurikuler.updateAll');
     Route::delete('nilaiekstrakurikuler/{id}', [\App\Http\Controllers\WaliKelas\NilaiEkstrakurikulerController::class, 'destroy'])
         ->name('walikelas.nilaiekstrakurikuler.destroy');
 

@@ -130,24 +130,43 @@ class NilaiEkstrakurikulerController extends Controller
         ));
     }
 
-    public function update(Request $request, $id)
+    public function updateAll(Request $request, $siswa_id)
     {
-        $ekskul = NilaiEkstrakurikuler::with('siswa')->findOrFail($id);
+        $siswa = Siswa::findOrFail($siswa_id);
+        $id_ta = $request->input('id_ta');
 
         $validated = $request->validate([
-            'nama_ekskul' => 'required|string|max:50',
-            'predikat' => 'required|in:Sangat Baik,Baik,Cukup,Kurang',
+            'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'ekskul' => 'required|array',
+            'ekskul.*.nama_ekskul' => 'required|string|max:50',
+            'ekskul.*.predikat' => 'required|in:Sangat Baik,Baik,Cukup,Kurang',
         ], [
-            'nama_ekskul.required' => 'Nama ekstrakurikuler wajib diisi.',
-            'predikat.required' => 'Predikat wajib dipilih.',
+            'ekskul.*.nama_ekskul.required' => 'Nama ekstrakurikuler wajib diisi.',
+            'ekskul.*.predikat.required' => 'Predikat wajib dipilih.',
         ]);
 
-        $ekskul->update($validated);
+        DB::beginTransaction();
+        try {
+            foreach ($validated['ekskul'] as $id => $item) {
+                $ekskul = NilaiEkstrakurikuler::where('id_siswa', $siswa_id)
+                    ->where('id_ta', $id_ta)
+                    ->findOrFail($id);
 
-        return redirect()->route('admin.nilaiekstrakurikuler.edit', [
-            'id' => $ekskul->id_siswa,
-            'tahun_ajaran' => $ekskul->id_ta,
-        ])->with('success', 'Nilai ekstrakurikuler berhasil diperbarui.');
+                $ekskul->update([
+                    'nama_ekskul' => $item['nama_ekskul'],
+                    'predikat' => $item['predikat'],
+                ]);
+            }
+            DB::commit();
+
+            return redirect()->route('admin.nilaiekstrakurikuler.edit', [
+                'id' => $siswa_id,
+                'tahun_ajaran' => $id_ta,
+            ])->with('success', 'Semua nilai ekstrakurikuler berhasil diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
+        }
     }
 
     public function destroy($id)
