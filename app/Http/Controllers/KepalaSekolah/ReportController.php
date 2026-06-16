@@ -5,7 +5,9 @@ namespace App\Http\Controllers\KepalaSekolah;
 use App\Http\Controllers\Controller;
 use App\Exports\HasilPerangkinganSmartExport;
 use App\Exports\HasilPerangkinganMooraExport;
+use App\Exports\HasilFinalisExport;
 use App\Models\HasilAkhir;
+use App\Models\HasilFinalis;
 use App\Models\Kelas;
 use App\Models\TahunAjaran;
 use App\Models\User;
@@ -83,6 +85,34 @@ class ReportController extends Controller
         );
     }
 
+    public function exportPdfFinalis(Request $request, string $method)
+    {
+        [$tahunAjaran, $adminUser] = $this->resolveFinalisParams($request, $method);
+        $hasilList = HasilFinalis::with('siswa.kelas')
+            ->where('id_ta', $tahunAjaran->id_ta)
+            ->where('user_id', $adminUser->id)
+            ->where('metode', $method)
+            ->orderByRaw("FIELD(tingkat, 'X', 'XI', 'XII')")
+            ->orderBy('rank')
+            ->get();
+
+        $pdf = Pdf::loadView('kepalasekolah.report.finalis_pdf', compact(
+            'hasilList', 'tahunAjaran', 'method'
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->download($this->filename($tahunAjaran, 'FINALIS_' . strtoupper($method), 'pdf'));
+    }
+
+    public function exportExcelFinalis(Request $request, string $method)
+    {
+        [$tahunAjaran, $adminUser] = $this->resolveFinalisParams($request, $method);
+
+        return Excel::download(
+            new HasilFinalisExport($tahunAjaran->id_ta, $adminUser->id, $method),
+            $this->filename($tahunAjaran, 'FINALIS_' . strtoupper($method), 'xlsx')
+        );
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private function resolveParams(Request $request): array
@@ -95,6 +125,15 @@ class ReportController extends Controller
         $sourceName  = $this->resolveSourceName($source);
 
         return [$filterTA, $source, $filterKelas, $tahunAjaran, $userId, $sourceName];
+    }
+
+    private function resolveFinalisParams(Request $request, string $method): array
+    {
+        abort_unless(in_array($method, ['smart', 'moora'], true), 404);
+
+        $tahunAjaran = TahunAjaran::findOrFail($request->get('tahun_ajaran'));
+        $adminUser = User::where('level', 'Admin')->firstOrFail();
+        return [$tahunAjaran, $adminUser];
     }
 
     private function filename($tahunAjaran, string $method, string $ext): string

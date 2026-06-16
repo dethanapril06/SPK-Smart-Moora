@@ -88,6 +88,10 @@
                         <i class="bx bx-trophy text-warning"></i> Hasil Ranking SMART — {{ $sourceName }}
                     </h5>
                     <div class="btn-group">
+                        <a href="{{ route('kepalasekolah.perhitungan.finalis.smart.index', ['tahun_ajaran' => $filterTA]) }}"
+                            class="btn btn-sm btn-secondary">
+                            <i class="bx bx-medal"></i> Finalis
+                        </a>
                         <a href="{{ route('kepalasekolah.report.smart.pdf', ['tahun_ajaran' => $filterTA, 'source' => $source, 'kelas' => $filterKelas]) }}"
                             class="btn btn-sm btn-danger" target="_blank">
                             <i class="bx bxs-file-pdf"></i> Export PDF
@@ -112,7 +116,7 @@
                         <tbody>
                             @forelse($hasilList as $item)
                                 <tr>
-                                    <td class="text-center">{{ $loop->iteration }}</td>
+                                    <td class="text-center">{{ $hasilList->firstItem() + $loop->index }}</td>
                                     <td>
                                         <strong>{{ $item->siswa->nisn }}</strong><br>
                                         <small>{{ $item->siswa->nama_siswa }}</small>
@@ -141,9 +145,11 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer">
-                    <small class="text-muted">Total: {{ $hasilList->count() }} siswa</small>
-                </div>
+                @if ($hasilList->count() > 0)
+                    <div class="card-footer">
+                        @include('admin.perhitungan._pagination', ['paginator' => $hasilList])
+                    </div>
+                @endif
             </div>
         @else
             <div class="card">

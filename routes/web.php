@@ -323,6 +323,10 @@ Route::prefix('kepala-sekolah')->middleware(['auth', 'check.level:Kepala Sekolah
     // Perangkingan / Hasil Perhitungan
     Route::get('perhitungan/smart',  [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'indexSmart'])->name('kepalasekolah.perhitungan.smart.index');
     Route::get('perhitungan/moora',  [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'indexMoora'])->name('kepalasekolah.perhitungan.moora.index');
+    Route::get('perhitungan/finalis/smart', [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'indexFinalisSmart'])
+        ->name('kepalasekolah.perhitungan.finalis.smart.index');
+    Route::get('perhitungan/finalis/moora', [\App\Http\Controllers\KepalaSekolah\PerhitunganController::class, 'indexFinalisMoora'])
+        ->name('kepalasekolah.perhitungan.finalis.moora.index');
 
     // Report / Export
     Route::get('report/smart/pdf', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportPdfSmart'])
@@ -336,4 +340,12 @@ Route::prefix('kepala-sekolah')->middleware(['auth', 'check.level:Kepala Sekolah
 
     Route::get('report/moora/excel', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportExcelMoora'])
         ->name('kepalasekolah.report.moora.excel');
+
+    Route::get('report/finalis/{method}/pdf', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportPdfFinalis'])
+        ->whereIn('method', ['smart', 'moora'])
+        ->name('kepalasekolah.report.finalis.pdf');
+
+    Route::get('report/finalis/{method}/excel', [\App\Http\Controllers\KepalaSekolah\ReportController::class, 'exportExcelFinalis'])
+        ->whereIn('method', ['smart', 'moora'])
+        ->name('kepalasekolah.report.finalis.excel');
 });

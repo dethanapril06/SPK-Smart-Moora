@@ -151,18 +151,6 @@
                 <div data-i18n="MOORA">MOORA</div>
               </a>
             </li>
-            <li class="menu-item {{ request()->is('admin/perhitungan/finalis/smart*') ? 'active' : '' }}">
-              <a href="{{ route('admin.perhitungan.finalis.smart.index') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-trophy"></i>
-                <div data-i18n="10 Besar SMART">10 Besar SMART</div>
-              </a>
-            </li>
-            <li class="menu-item {{ request()->is('admin/perhitungan/finalis/moora*') ? 'active' : '' }}">
-              <a href="{{ route('admin.perhitungan.finalis.moora.index') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-medal"></i>
-                <div data-i18n="10 Besar MOORA">10 Besar MOORA</div>
-              </a>
-            </li>
 
             <li class="menu-header small text-uppercase">
               <span class="menu-header-text">Master Data</span>

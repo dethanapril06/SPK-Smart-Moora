@@ -50,7 +50,8 @@
                             @foreach ($kriteriaList as $kriteria)
                                 <th class="text-center">
                                     {{ $kriteria->kode_kriteria }}<br>
-                                    <small class="badge bg-label-{{ $kriteria->jenis_kriteria == 'Benefit' ? 'success' : 'warning' }}">
+                                    <small
+                                        class="badge bg-label-{{ $kriteria->jenis_kriteria == 'Benefit' ? 'success' : 'warning' }}">
                                         {{ $kriteria->jenis_kriteria }}
                                     </small>
                                 </th>
@@ -211,6 +212,10 @@
                     class="btn btn-secondary">
                     <i class="bx bx-arrow-back"></i> Kembali ke Hasil MOORA
                 </a>
+                <a href="{{ route('admin.perhitungan.finalis.moora.index') }}" class="btn btn-secondary">
+                    <i class="tf-icons bx bx-medal"></i> Hitung 10 Besar MOORA
+                </a>
+
             </div>
         </div>
     </div>

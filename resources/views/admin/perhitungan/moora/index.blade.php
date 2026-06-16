@@ -34,7 +34,8 @@
                 <form action="{{ route('admin.perhitungan.moora.index') }}" method="GET">
                     <div class="row g-3">
                         <div class="col-md-5">
-                            <label class="form-label" for="tahun_ajaran">Tahun Ajaran <span class="text-danger">*</span></label>
+                            <label class="form-label" for="tahun_ajaran">Tahun Ajaran <span
+                                    class="text-danger">*</span></label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran" required>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
@@ -114,14 +115,16 @@
                         </div>
                     @endif
 
-                    <form id="calculate-form" action="{{ route('admin.perhitungan.moora.calculate') }}" method="POST" class="d-none">
+                    <form id="calculate-form" action="{{ route('admin.perhitungan.moora.calculate') }}" method="POST"
+                        class="d-none">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
                         @foreach ($filterKelas as $kelasId)
                             <input type="hidden" name="kelas[]" value="{{ $kelasId }}">
                         @endforeach
                     </form>
-                    <form id="recalculate-form" action="{{ route('admin.perhitungan.moora.calculate') }}" method="POST" class="d-none">
+                    <form id="recalculate-form" action="{{ route('admin.perhitungan.moora.calculate') }}" method="POST"
+                        class="d-none">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
                         @foreach ($filterKelas as $kelasId)
@@ -141,6 +144,9 @@
                         <a href="{{ route('admin.perhitungan.moora.steps', ['id_ta' => $filterTA, 'kelas' => $filterKelas]) }}"
                             class="btn btn-sm btn-success">
                             <i class="bx bx-detail"></i> Langkah MOORA
+                        </a>
+                        <a href="{{ route('admin.perhitungan.finalis.moora.index') }}" class="btn btn-sm btn-secondary">
+                            <i class="tf-icons bx bx-medal"></i> 10 Besar MOORA
                         </a>
                     </div>
                 </div>
@@ -196,27 +202,40 @@
                             <nav aria-label="Page navigation">
                                 <ul class="pagination pagination-sm mb-0">
                                     @if ($hasilList->onFirstPage())
-                                        <li class="page-item disabled"><span class="page-link"><i class="tf-icon bx bx-chevrons-left"></i></span></li>
-                                        <li class="page-item disabled"><span class="page-link"><i class="tf-icon bx bx-chevron-left"></i></span></li>
+                                        <li class="page-item disabled"><span class="page-link"><i
+                                                    class="tf-icon bx bx-chevrons-left"></i></span></li>
+                                        <li class="page-item disabled"><span class="page-link"><i
+                                                    class="tf-icon bx bx-chevron-left"></i></span></li>
                                     @else
-                                        <li class="page-item"><a class="page-link" href="{{ $hasilList->url(1) }}"><i class="tf-icon bx bx-chevrons-left"></i></a></li>
-                                        <li class="page-item"><a class="page-link" href="{{ $hasilList->previousPageUrl() }}"><i class="tf-icon bx bx-chevron-left"></i></a></li>
+                                        <li class="page-item"><a class="page-link" href="{{ $hasilList->url(1) }}"><i
+                                                    class="tf-icon bx bx-chevrons-left"></i></a></li>
+                                        <li class="page-item"><a class="page-link"
+                                                href="{{ $hasilList->previousPageUrl() }}"><i
+                                                    class="tf-icon bx bx-chevron-left"></i></a></li>
                                     @endif
 
                                     @foreach ($hasilList->getUrlRange(max(1, $hasilList->currentPage() - 2), min($hasilList->lastPage(), $hasilList->currentPage() + 2)) as $page => $url)
                                         @if ($page == $hasilList->currentPage())
-                                            <li class="page-item active"><span class="page-link">{{ $page }}</span></li>
+                                            <li class="page-item active"><span
+                                                    class="page-link">{{ $page }}</span></li>
                                         @else
-                                            <li class="page-item"><a class="page-link" href="{{ $url }}">{{ $page }}</a></li>
+                                            <li class="page-item"><a class="page-link"
+                                                    href="{{ $url }}">{{ $page }}</a></li>
                                         @endif
                                     @endforeach
 
                                     @if ($hasilList->hasMorePages())
-                                        <li class="page-item"><a class="page-link" href="{{ $hasilList->nextPageUrl() }}"><i class="tf-icon bx bx-chevron-right"></i></a></li>
-                                        <li class="page-item"><a class="page-link" href="{{ $hasilList->url($hasilList->lastPage()) }}"><i class="tf-icon bx bx-chevrons-right"></i></a></li>
+                                        <li class="page-item"><a class="page-link"
+                                                href="{{ $hasilList->nextPageUrl() }}"><i
+                                                    class="tf-icon bx bx-chevron-right"></i></a></li>
+                                        <li class="page-item"><a class="page-link"
+                                                href="{{ $hasilList->url($hasilList->lastPage()) }}"><i
+                                                    class="tf-icon bx bx-chevrons-right"></i></a></li>
                                     @else
-                                        <li class="page-item disabled"><span class="page-link"><i class="tf-icon bx bx-chevron-right"></i></span></li>
-                                        <li class="page-item disabled"><span class="page-link"><i class="tf-icon bx bx-chevrons-right"></i></span></li>
+                                        <li class="page-item disabled"><span class="page-link"><i
+                                                    class="tf-icon bx bx-chevron-right"></i></span></li>
+                                        <li class="page-item disabled"><span class="page-link"><i
+                                                    class="tf-icon bx bx-chevrons-right"></i></span></li>
                                     @endif
                                 </ul>
                             </nav>
@@ -269,10 +288,12 @@
             border-radius: 0.375rem;
             padding: 0.2rem 0.4rem;
         }
+
         .select2-container--default.select2-container--focus .select2-selection--multiple {
             border-color: #696cff;
             box-shadow: 0 0 0 .2rem rgba(105, 108, 255, .25);
         }
+
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             background-color: #e7e7ff;
             border: 1px solid #c7c9ff;
@@ -281,6 +302,7 @@
             padding: 0 0.5rem;
             margin-top: 0.25rem;
         }
+
         .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
             background-color: #696cff;
         }

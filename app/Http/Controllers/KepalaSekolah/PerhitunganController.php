@@ -4,6 +4,7 @@ namespace App\Http\Controllers\KepalaSekolah;
 
 use App\Http\Controllers\Controller;
 use App\Models\HasilAkhir;
+use App\Models\HasilFinalis;
 use App\Models\Kelas;
 use App\Models\TahunAjaran;
 use App\Models\User;
@@ -24,7 +25,7 @@ class PerhitunganController extends Controller
             $filterTA = $tahunAjaranAktif->id_ta;
         }
 
-        $hasilList    = collect();
+        $hasilList    = HasilAkhir::whereRaw('1 = 0')->paginate(10);
         $sourceName   = 'Admin';
         $hasCalculation = false;
 
@@ -39,8 +40,9 @@ class PerhitunganController extends Controller
                         ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
                             $sq->where('id_kelas', $filterKelas)
                         ))
-                        ->get()
-                        ->sortBy('rank_smart');
+                        ->orderBy('rank_smart')
+                        ->paginate(10)
+                        ->withQueryString();
                 }
                 $sourceName = 'Admin (Semua Siswa)';
             } else {
@@ -51,14 +53,15 @@ class PerhitunganController extends Controller
                         ->where('id_ta', $filterTA)
                         ->where('user_id', $waliKelas->id)
                         ->whereNotNull('rank_smart')   // ← hanya ambil yang ada SMART
-                        ->get()
-                        ->sortBy('rank_smart');
+                        ->orderBy('rank_smart')
+                        ->paginate(10)
+                        ->withQueryString();
                     $sourceName = 'Wali Kelas: ' . $waliKelas->name
                         . ($kelas ? ' (' . $kelas->nama_kelas . ')' : '');
                 }
             }
 
-            $hasCalculation = $hasilList->count() > 0;
+            $hasCalculation = $hasilList->total() > 0;
         }
 
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
@@ -85,7 +88,7 @@ class PerhitunganController extends Controller
             $filterTA = $tahunAjaranAktif->id_ta;
         }
 
-        $hasilList    = collect();
+        $hasilList    = HasilAkhir::whereRaw('1 = 0')->paginate(10);
         $sourceName   = 'Admin';
         $hasCalculation = false;
 
@@ -100,8 +103,9 @@ class PerhitunganController extends Controller
                         ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
                             $sq->where('id_kelas', $filterKelas)
                         ))
-                        ->get()
-                        ->sortBy('rank_moora');
+                        ->orderBy('rank_moora')
+                        ->paginate(10)
+                        ->withQueryString();
                 }
                 $sourceName = 'Admin (Semua Siswa)';
             } else {
@@ -112,14 +116,15 @@ class PerhitunganController extends Controller
                         ->where('id_ta', $filterTA)
                         ->where('user_id', $waliKelas->id)
                         ->whereNotNull('rank_moora')   // ← hanya ambil yang ada MOORA
-                        ->get()
-                        ->sortBy('rank_moora');
+                        ->orderBy('rank_moora')
+                        ->paginate(10)
+                        ->withQueryString();
                     $sourceName = 'Wali Kelas: ' . $waliKelas->name
                         . ($kelas ? ' (' . $kelas->nama_kelas . ')' : '');
                 }
             }
 
-            $hasCalculation = $hasilList->count() > 0;
+            $hasCalculation = $hasilList->total() > 0;
         }
 
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
@@ -134,6 +139,48 @@ class PerhitunganController extends Controller
     }
 
     // ─── COMPARE ────────────────────────────────────────────────────────────────
+
+    public function indexFinalisSmart(Request $request)
+    {
+        return $this->indexFinalis($request, 'smart');
+    }
+
+    public function indexFinalisMoora(Request $request)
+    {
+        return $this->indexFinalis($request, 'moora');
+    }
+
+    protected function indexFinalis(Request $request, string $method)
+    {
+        $filterTA = $request->get('tahun_ajaran');
+        $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
+        $adminUser = User::where('level', 'Admin')->first();
+
+        if (!$filterTA && $tahunAjaranAktif) {
+            $filterTA = $tahunAjaranAktif->id_ta;
+        }
+
+        $hasilByTingkat = HasilFinalis::with(['siswa.kelas', 'tahunAjaran'])
+            ->when($adminUser, fn($query) => $query->where('user_id', $adminUser->id))
+            ->when(!$adminUser, fn($query) => $query->whereRaw('1 = 0'))
+            ->where('metode', $method)
+            ->when($filterTA, fn($query) => $query->where('id_ta', $filterTA))
+            ->orderByRaw("FIELD(tingkat, 'X', 'XI', 'XII')")
+            ->orderBy('rank')
+            ->get()
+            ->groupBy('tingkat');
+
+        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $hasCalculation = $filterTA && $hasilByTingkat->flatten(1)->isNotEmpty();
+
+        return view('kepalasekolah.perhitungan.finalis.index', compact(
+            'hasilByTingkat',
+            'tahunAjaranList',
+            'filterTA',
+            'hasCalculation',
+            'method'
+        ));
+    }
 
     public function compare($id_ta, Request $request)
     {

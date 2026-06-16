@@ -50,7 +50,8 @@
                             @foreach ($kriteriaList as $kriteria)
                                 <th class="text-center">
                                     {{ $kriteria->kode_kriteria }}<br>
-                                    <small class="badge bg-label-{{ $kriteria->jenis_kriteria == 'Benefit' ? 'success' : 'warning' }}">
+                                    <small
+                                        class="badge bg-label-{{ $kriteria->jenis_kriteria == 'Benefit' ? 'success' : 'warning' }}">
                                         {{ $kriteria->jenis_kriteria }}
                                     </small>
                                 </th>
@@ -202,6 +203,9 @@
                 <a href="{{ route('admin.perhitungan.smart.index', ['tahun_ajaran' => $tahunAjaran->id_ta, 'kelas' => $selectedKelasIds ?? []]) }}"
                     class="btn btn-secondary">
                     <i class="bx bx-arrow-back"></i> Kembali ke Hasil SMART
+                </a>
+                <a href="{{ route('admin.perhitungan.finalis.smart.index') }}" class="btn btn-sm btn-secondary">
+                    <i class="tf-icons bx bx-medal"></i> 10 Besar SMART
                 </a>
             </div>
         </div>
