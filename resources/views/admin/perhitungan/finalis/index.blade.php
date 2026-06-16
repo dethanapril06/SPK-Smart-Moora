@@ -38,7 +38,12 @@
         @endif
 
         <div class="card mb-4">
-            <h5 class="card-header">Filter &amp; Perhitungan 10 Besar {{ $methodName }}</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Filter &amp; Perhitungan 10 Besar {{ $methodName }}</h5>
+                <a href="{{ route('admin.perhitungan.smart.index') }}" class="btn btn-sm btn-secondary">
+                    <i class="bx bx-arrow-back"></i> Kembali
+                </a>
+            </div>
             <div class="card-body">
                 <form action="{{ route("admin.perhitungan.finalis.{$method}.index") }}" method="GET">
                     <div class="row g-3 align-items-end">

@@ -27,7 +27,12 @@
         </div>
 
         <div class="card mb-4">
-            <h5 class="card-header">Filter Finalis {{ $methodName }}</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Filter Finalis {{ $methodName }}</h5>
+                <a href="{{ route('kepalasekolah.perhitungan.smart.index') }}" class="btn btn-sm btn-secondary">
+                    <i class="bx bx-arrow-back"></i> Kembali
+                </a>
+            </div>
             <div class="card-body">
                 <form action="{{ route("kepalasekolah.perhitungan.finalis.{$method}.index") }}" method="GET">
                     <div class="row g-3 align-items-end">
