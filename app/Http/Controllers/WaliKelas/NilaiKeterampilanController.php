@@ -7,6 +7,7 @@ use App\Models\NilaiKeterampilan;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
 use App\Models\Kelas;
+use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -26,8 +27,7 @@ class NilaiKeterampilanController extends Controller
 
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
         
-        // Get mapel based on kelas relationship
-        $mapelList = $kelas->mataPelajaran()->orderBy('kode_mapel')->get();
+        $mapelList = MataPelajaran::orderBy('kode_mapel')->get();
 
         $siswaList = collect();
 

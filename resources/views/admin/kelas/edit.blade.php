@@ -81,51 +81,11 @@
 
                     <div class="mb-3">
                         <label class="form-label">Mata Pelajaran</label>
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <div class="mb-2">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllMapel">
-                                        <i class="bx bx-check-double"></i> Pilih Semua
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllMapel">
-                                        <i class="bx bx-x"></i> Hapus Semua
-                                    </button>
-                                    <span class="ms-2 text-muted">
-                                        Terpilih: <span class="badge bg-primary"
-                                            id="mapelCount">{{ count($assignedMapelIds) }}</span> mapel
-                                    </span>
-                                </div>
-                                @if ($mataPelajaran->count() > 0)
-                                    <div class="row" style="max-height: 250px; overflow-y: auto;">
-                                        @foreach ($mataPelajaran as $mapel)
-                                            <div class="col-md-4 col-sm-6 mb-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input mapel-checkbox" type="checkbox"
-                                                        name="mapel[]" value="{{ $mapel->id_mapel }}"
-                                                        id="mapel_{{ $mapel->id_mapel }}"
-                                                        {{ in_array($mapel->id_mapel, old('mapel', $assignedMapelIds)) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="mapel_{{ $mapel->id_mapel }}">
-                                                        {{ $mapel->nama_mapel }}
-                                                        <small class="text-muted d-block">{{ $mapel->kode_mapel }}</small>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <div class="text-muted">
-                                        <i class="bx bx-info-circle me-1"></i>
-                                        Belum ada mata pelajaran.
-                                        <a href="{{ route('admin.matapelajaran.create') }}">Tambah mata pelajaran</a>
-                                        terlebih dahulu.
-                                    </div>
-                                @endif
-                            </div>
+                        <div class="alert alert-info mb-0" role="alert">
+                            <i class="bx bx-info-circle me-1"></i>
+                            Semua mata pelajaran otomatis tersedia untuk kelas ini.
+                            <span class="fw-semibold">{{ $mataPelajaran->count() }}</span> mapel aktif akan digunakan.
                         </div>
-                        @error('mapel')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                        @enderror
-                        <div class="form-text">Pilih mata pelajaran yang diajarkan di kelas ini</div>
                     </div>
 
                     <div class="d-flex justify-content-between">
@@ -141,33 +101,4 @@
         </div>
     </div>
 
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const checkboxes = document.querySelectorAll('.mapel-checkbox');
-                const mapelCount = document.getElementById('mapelCount');
-                const selectAllBtn = document.getElementById('selectAllMapel');
-                const deselectAllBtn = document.getElementById('deselectAllMapel');
-
-                function updateCount() {
-                    const checked = document.querySelectorAll('.mapel-checkbox:checked').length;
-                    mapelCount.textContent = checked;
-                }
-
-                checkboxes.forEach(cb => {
-                    cb.addEventListener('change', updateCount);
-                });
-
-                selectAllBtn.addEventListener('click', function() {
-                    checkboxes.forEach(cb => cb.checked = true);
-                    updateCount();
-                });
-
-                deselectAllBtn.addEventListener('click', function() {
-                    checkboxes.forEach(cb => cb.checked = false);
-                    updateCount();
-                });
-            });
-        </script>
-    @endpush
 @endsection

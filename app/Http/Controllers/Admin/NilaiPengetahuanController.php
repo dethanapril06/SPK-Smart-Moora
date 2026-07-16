@@ -7,6 +7,7 @@ use App\Models\NilaiPengetahuan;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
 use App\Models\Kelas;
+use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -20,14 +21,9 @@ class NilaiPengetahuanController extends Controller
         $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         
-        // Get mapel based on selected kelas relationship
-        $mapelList = collect();
-        if ($filterKelas) {
-            $kelas = Kelas::with('mataPelajaran')->find($filterKelas);
-            if ($kelas) {
-                $mapelList = $kelas->mataPelajaran()->orderBy('kode_mapel')->get();
-            }
-        }
+        $mapelList = $filterKelas
+            ? MataPelajaran::orderBy('kode_mapel')->get()
+            : collect();
 
         $siswaList = collect();
 

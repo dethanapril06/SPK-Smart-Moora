@@ -54,8 +54,6 @@ class KelasController extends Controller
             'nama_kelas' => 'required|string|max:255',
             'id_wali_kelas' => 'nullable|exists:users,id',
             'kapasitas' => 'nullable|integer|min:0',
-            'mapel' => 'nullable|array',
-            'mapel.*' => 'exists:tb_mata_pelajaran,id_mapel',
         ], [
             'id_kelas.required' => 'ID Kelas wajib diisi.',
             'id_kelas.unique' => 'ID Kelas sudah digunakan.',
@@ -63,7 +61,6 @@ class KelasController extends Controller
             'id_wali_kelas.exists' => 'Wali kelas tidak valid.',
             'kapasitas.integer' => 'Kapasitas harus berupa angka.',
             'kapasitas.min' => 'Kapasitas minimal 0.',
-            'mapel.*.exists' => 'Mata pelajaran tidak valid.',
         ]);
 
         $kelas = Kelas::create([
@@ -73,10 +70,7 @@ class KelasController extends Controller
             'kapasitas' => $validated['kapasitas'] ?? 0,
         ]);
 
-        // Sync mata pelajaran
-        if (isset($validated['mapel'])) {
-            $kelas->mataPelajaran()->sync($validated['mapel']);
-        }
+        $this->syncAllMataPelajaran($kelas);
 
         return redirect()->route('admin.kelas.index')
             ->with('success', 'Kelas berhasil ditambahkan.');
@@ -96,11 +90,9 @@ class KelasController extends Controller
      */
     public function edit(Kelas $kela)
     {
-        $kela->load('mataPelajaran');
         $waliKelas = User::where('level', 'Wali Kelas')->get();
         $mataPelajaran = MataPelajaran::orderBy('nama_mapel')->get();
-        $assignedMapelIds = $kela->mataPelajaran->pluck('id_mapel')->toArray();
-        return view('admin.kelas.edit', compact('kela', 'waliKelas', 'mataPelajaran', 'assignedMapelIds'));
+        return view('admin.kelas.edit', compact('kela', 'waliKelas', 'mataPelajaran'));
     }
 
     /**
@@ -112,14 +104,11 @@ class KelasController extends Controller
             'nama_kelas' => 'required|string|max:255',
             'id_wali_kelas' => 'nullable|exists:users,id',
             'kapasitas' => 'nullable|integer|min:0',
-            'mapel' => 'nullable|array',
-            'mapel.*' => 'exists:tb_mata_pelajaran,id_mapel',
         ], [
             'nama_kelas.required' => 'Nama kelas wajib diisi.',
             'id_wali_kelas.exists' => 'Wali kelas tidak valid.',
             'kapasitas.integer' => 'Kapasitas harus berupa angka.',
             'kapasitas.min' => 'Kapasitas minimal 0.',
-            'mapel.*.exists' => 'Mata pelajaran tidak valid.',
         ]);
 
         $kela->update([
@@ -128,9 +117,7 @@ class KelasController extends Controller
             'kapasitas' => $validated['kapasitas'] ?? 0,
         ]);
 
-        // Sync mata pelajaran
-        $mapelIds = $validated['mapel'] ?? [];
-        $kela->mataPelajaran()->sync($mapelIds);
+        $this->syncAllMataPelajaran($kela);
 
         return redirect()->route('admin.kelas.index')
             ->with('success', 'Kelas berhasil diperbarui.');
@@ -145,5 +132,10 @@ class KelasController extends Controller
 
         return redirect()->route('admin.kelas.index')
             ->with('success', 'Kelas berhasil dihapus.');
+    }
+
+    private function syncAllMataPelajaran(Kelas $kelas): void
+    {
+        $kelas->mataPelajaran()->sync(MataPelajaran::pluck('id_mapel')->all());
     }
 }

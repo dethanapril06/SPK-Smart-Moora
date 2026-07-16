@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 
@@ -40,7 +41,11 @@ class MataPelajaranController extends Controller
             'nama_mapel.required' => 'Nama mata pelajaran wajib diisi.',
         ]);
 
-        MataPelajaran::create($validated);
+        $mataPelajaran = MataPelajaran::create($validated);
+
+        Kelas::query()->each(function (Kelas $kelas) use ($mataPelajaran) {
+            $kelas->mataPelajaran()->syncWithoutDetaching([$mataPelajaran->id_mapel]);
+        });
 
         return redirect()->route('admin.matapelajaran.index')
             ->with('success', 'Mata pelajaran berhasil ditambahkan.');
