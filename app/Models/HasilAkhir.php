@@ -12,6 +12,7 @@ class HasilAkhir extends Model
     protected $fillable = [
         'id_siswa',
         'id_ta',
+        'id_semester',
         'user_id',
         'skor_smart',
         'rank_smart',
@@ -30,6 +31,12 @@ class HasilAkhir extends Model
     public function tahunAjaran()
     {
         return $this->belongsTo(TahunAjaran::class, 'id_ta');
+    }
+
+    // Relasi dengan Semester
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'id_semester');
     }
 
     // Relasi dengan User (pemilik perhitungan)

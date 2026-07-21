@@ -33,18 +33,29 @@
             <div class="card-body">
                 <form action="{{ route('admin.perhitungan.moora.index') }}" method="GET">
                     <div class="row g-3">
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran <span
                                     class="text-danger">*</span></label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran" required>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label" for="semester">Semester</label>
+                            <select class="form-select" id="semester" name="semester">
+                                <option value="">Semua Semester</option>
+                                @foreach ($semesterList as $s)
+                                    <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>
+                                        {{ $s->nama_semester }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label" for="kelas">Kelas (Pilih untuk Perhitungan)</label>
                             <select class="form-select js-kelas-select2" id="kelas" name="kelas[]" multiple
                                 data-placeholder="Pilih satu atau lebih kelas...">
@@ -59,7 +70,7 @@
                             <small class="text-muted d-block mt-1">Pilih "Semua Kelas" untuk menghitung seluruh kelas,
                                 atau pilih beberapa kelas secara manual.</small>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">&nbsp;</label>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary">
@@ -119,6 +130,7 @@
                         class="d-none">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
+                        <input type="hidden" name="id_semester" value="{{ $filterSemester }}">
                         @foreach ($filterKelas as $kelasId)
                             <input type="hidden" name="kelas[]" value="{{ $kelasId }}">
                         @endforeach
@@ -127,6 +139,7 @@
                         class="d-none">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
+                        <input type="hidden" name="id_semester" value="{{ $filterSemester }}">
                         @foreach ($filterKelas as $kelasId)
                             <input type="hidden" name="kelas[]" value="{{ $kelasId }}">
                         @endforeach
@@ -141,11 +154,11 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5>Hasil Ranking MOORA</h5>
                     <div>
-                        <a href="{{ route('admin.perhitungan.moora.steps', ['id_ta' => $filterTA, 'kelas' => $filterKelas]) }}"
+                        <a href="{{ route('admin.perhitungan.moora.steps', ['id_ta' => $filterTA, 'semester' => $filterSemester, 'kelas' => $filterKelas]) }}"
                             class="btn btn-sm btn-success">
                             <i class="bx bx-detail"></i> Langkah MOORA
                         </a>
-                        <a href="{{ route('admin.perhitungan.finalis.moora.index') }}" class="btn btn-sm btn-secondary">
+                        <a href="{{ route('admin.perhitungan.finalis.moora.index', ['tahun_ajaran' => $filterTA, 'semester' => $filterSemester]) }}" class="btn btn-sm btn-secondary">
                             <i class="tf-icons bx bx-medal"></i> 10 Besar MOORA
                         </a>
                     </div>

@@ -18,6 +18,7 @@ class HasilFinalisExport implements FromCollection, WithHeadings, WithMapping, W
 
     public function __construct(
         private readonly int $tahunAjaranId,
+        private readonly ?int $semesterId,
         private readonly int $adminUserId,
         private readonly string $method
     ) {
@@ -27,6 +28,7 @@ class HasilFinalisExport implements FromCollection, WithHeadings, WithMapping, W
     {
         return HasilFinalis::with('siswa.kelas')
             ->where('id_ta', $this->tahunAjaranId)
+            ->when($this->semesterId, fn($q) => $q->where('id_semester', $this->semesterId))
             ->where('user_id', $this->adminUserId)
             ->where('metode', $this->method)
             ->orderByRaw("FIELD(tingkat, 'X', 'XI', 'XII')")

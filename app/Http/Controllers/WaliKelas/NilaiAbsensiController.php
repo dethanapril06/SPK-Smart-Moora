@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NilaiAbsensi;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,14 +24,16 @@ class NilaiAbsensiController extends Controller
     {
         $kelas = $this->getKelas();
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
 
         $siswaList = collect();
 
-        if ($filterTA) {
-            $siswaList = Siswa::with(['nilaiAbsensi' => function ($q) use ($filterTA) {
-                $q->where('id_ta', $filterTA);
+        if ($filterTA && $filterSemester) {
+            $siswaList = Siswa::with(['nilaiAbsensi' => function ($q) use ($filterTA, $filterSemester) {
+                $q->where('id_ta', $filterTA)->where('id_semester', $filterSemester);
             }])
                 ->where('id_kelas', $kelas->id_kelas)
                 ->where('id_ta', $filterTA)
@@ -39,7 +42,7 @@ class NilaiAbsensiController extends Controller
         }
 
         return view('walikelas.nilaiabsensi.index', compact(
-            'siswaList', 'tahunAjaranList', 'filterTA', 'kelas'
+            'siswaList', 'tahunAjaranList', 'semesterList', 'filterTA', 'filterSemester', 'kelas'
         ));
     }
 
@@ -49,6 +52,7 @@ class NilaiAbsensiController extends Controller
 
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'absensi' => 'required|array',
         ]);
 
@@ -62,6 +66,7 @@ class NilaiAbsensiController extends Controller
                     [
                         'id_siswa' => $id_siswa,
                         'id_ta' => $validated['id_ta'],
+                        'id_semester' => $validated['id_semester'],
                     ],
                     [
                         'jumlah_sakit' => $values['sakit'] ?? 0,

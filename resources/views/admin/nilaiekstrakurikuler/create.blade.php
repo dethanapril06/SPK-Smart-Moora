@@ -29,7 +29,7 @@
 
                     {{-- Filter Tahun Ajaran & Kelas --}}
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label" for="id_ta">Tahun Ajaran <span
                                     class="text-danger">*</span></label>
                             <div class="input-group input-group-merge">
@@ -40,8 +40,7 @@
                                     @foreach ($tahunAjaranList as $ta)
                                         <option value="{{ $ta->id_ta }}"
                                             {{ (old('id_ta', $selectedTA) == $ta->id_ta) ? 'selected' : '' }}>
-                                            {{ $ta->tahun_ajaran }} - Semester {{ $ta->semester }}
-                                            {{ $ta->is_active ? '(Aktif)' : '' }}
+                                            {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -50,7 +49,27 @@
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label" for="id_semester">Semester <span
+                                    class="text-danger">*</span></label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-time"></i></span>
+                                <select id="id_semester" name="id_semester"
+                                    class="form-select @error('id_semester') is-invalid @enderror">
+                                    <option value="">-- Pilih Semester --</option>
+                                    @foreach ($semesterList as $s)
+                                        <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}"
+                                            {{ (old('id_semester', $selectedSemester) == $s->id_semester) ? 'selected' : '' }}>
+                                            {{ $s->nama_semester }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @error('id_semester')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label" for="id_kelas">Kelas <span class="text-danger">*</span></label>
                             <div class="input-group input-group-merge">
                                 <span class="input-group-text"><i class="bx bx-book"></i></span>

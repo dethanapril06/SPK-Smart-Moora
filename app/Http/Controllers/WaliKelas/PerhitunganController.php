@@ -5,6 +5,7 @@ namespace App\Http\Controllers\WaliKelas;
 use App\Http\Controllers\Controller;
 use App\Models\HasilAkhir;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\Kelas;
 use App\Models\Kriteria;
 use App\Models\Penilaian;
@@ -41,6 +42,7 @@ class PerhitunganController extends Controller
         $kelasId = $kelas->id_kelas;
 
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
 
         if (!$filterTA && $tahunAjaranAktif) {
@@ -53,6 +55,7 @@ class PerhitunganController extends Controller
             ->where('user_id', $userId)
             ->whereNotNull('skor_smart')
             ->when($filterTA, fn($q) => $q->where('id_ta', $filterTA))
+            ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
 
         $hasilList = $hasilQuery
@@ -60,7 +63,8 @@ class PerhitunganController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList    = Semester::orderBy('id_semester')->get();
         $hasCalculation  = $filterTA && $hasilList->total() > 0;
 
         $studentsWithCompletePenilaian = 0;
@@ -69,6 +73,7 @@ class PerhitunganController extends Controller
             $siswaIds      = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa');
             $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
                 ->where('id_ta', $filterTA)
+                ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                 ->whereIn('id_siswa', $siswaIds)
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
@@ -76,7 +81,7 @@ class PerhitunganController extends Controller
         }
 
         return view('walikelas.perhitungan.smart.index', compact(
-            'hasilList', 'tahunAjaranList', 'filterTA',
+            'hasilList', 'tahunAjaranList', 'semesterList', 'filterTA', 'filterSemester',
             'hasCalculation', 'studentsWithCompletePenilaian', 'kelas'
         ));
     }
@@ -87,15 +92,18 @@ class PerhitunganController extends Controller
         $kelasId = $kelas->id_kelas;
 
         $validated = $request->validate([
-            'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta'
+            'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
         ]);
 
-        $id_ta    = $validated['id_ta'];
-        $siswaIds = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
+        $id_ta       = $validated['id_ta'];
+        $id_semester = $validated['id_semester'];
+        $siswaIds    = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
 
         $kriteriaCount = Kriteria::count();
         $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
             ->where('id_ta', $id_ta)
+            ->where('id_semester', $id_semester)
             ->whereIn('id_siswa', $siswaIds)
             ->groupBy('id_siswa')
             ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
@@ -107,10 +115,11 @@ class PerhitunganController extends Controller
 
         DB::beginTransaction();
         try {
-            $smartResults = $this->smartCalculator->calculate($id_ta, $siswaIds);
+            $smartResults = $this->smartCalculator->calculate($id_ta, $siswaIds, $id_semester);
             $userId       = auth()->id();
 
             HasilAkhir::where('id_ta', $id_ta)
+                ->where('id_semester', $id_semester)
                 ->where('user_id', $userId)
                 ->whereIn('id_siswa', $siswaIds)
                 ->update([
@@ -123,6 +132,7 @@ class PerhitunganController extends Controller
                     [
                         'id_siswa' => $smart['id_siswa'],
                         'id_ta' => $id_ta,
+                        'id_semester' => $id_semester,
                         'user_id' => $userId,
                     ],
                     [
@@ -134,7 +144,7 @@ class PerhitunganController extends Controller
 
             DB::commit();
 
-            return redirect()->route('walikelas.perhitungan.smart.index', ['tahun_ajaran' => $id_ta])
+            return redirect()->route('walikelas.perhitungan.smart.index', ['tahun_ajaran' => $id_ta, 'semester' => $id_semester])
                 ->with('success', "Perhitungan SMART berhasil! {$studentsWithCompletePenilaian} siswa telah di-ranking.");
 
         } catch (\Exception $e) {
@@ -143,16 +153,17 @@ class PerhitunganController extends Controller
         }
     }
 
-    public function showStepsSmart($id_ta)
+    public function showStepsSmart(Request $request, $id_ta)
     {
         $kelas   = $this->getKelas();
         $kelasId = $kelas->id_kelas;
+        $id_semester = $request->get('semester');
 
-        $tahunAjaran = TahunAjaran::findOrFail($id_ta);
+        $tahunAjaran  = TahunAjaran::findOrFail($id_ta);
         $kriteriaList = Kriteria::orderBy('kode_kriteria')->get();
-        $siswaIds    = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
+        $siswaIds     = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
 
-        $results       = $this->smartCalculator->calculate($id_ta, $siswaIds);
+        $results       = $this->smartCalculator->calculate($id_ta, $siswaIds, $id_semester);
         $detailedSteps = $this->smartCalculator->getDetailedSteps();
 
         $perPage          = 10;
@@ -175,7 +186,7 @@ class PerhitunganController extends Controller
         $step4Steps = $buildPaginator('step4_page');
 
         return view('walikelas.perhitungan.smart.steps', compact(
-            'tahunAjaran', 'kriteriaList', 'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps'
+            'tahunAjaran', 'kriteriaList', 'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'id_semester'
         ));
     }
 
@@ -187,6 +198,7 @@ class PerhitunganController extends Controller
         $kelasId = $kelas->id_kelas;
 
         $filterTA        = $request->get('tahun_ajaran');
+        $filterSemester  = $request->get('semester');
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
 
         if (!$filterTA && $tahunAjaranAktif) {
@@ -199,6 +211,7 @@ class PerhitunganController extends Controller
             ->where('user_id', $userId)
             ->whereNotNull('skor_moora')
             ->when($filterTA, fn($q) => $q->where('id_ta', $filterTA))
+            ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
 
         $hasilList = $hasilQuery
@@ -206,7 +219,8 @@ class PerhitunganController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList    = Semester::orderBy('id_semester')->get();
         $hasCalculation  = $filterTA && $hasilList->total() > 0;
 
         $studentsWithCompletePenilaian = 0;
@@ -215,6 +229,7 @@ class PerhitunganController extends Controller
             $siswaIds      = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa');
             $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
                 ->where('id_ta', $filterTA)
+                ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                 ->whereIn('id_siswa', $siswaIds)
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
@@ -222,7 +237,7 @@ class PerhitunganController extends Controller
         }
 
         return view('walikelas.perhitungan.moora.index', compact(
-            'hasilList', 'tahunAjaranList', 'filterTA',
+            'hasilList', 'tahunAjaranList', 'semesterList', 'filterTA', 'filterSemester',
             'hasCalculation', 'studentsWithCompletePenilaian', 'kelas'
         ));
     }
@@ -233,15 +248,18 @@ class PerhitunganController extends Controller
         $kelasId = $kelas->id_kelas;
 
         $validated = $request->validate([
-            'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta'
+            'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
         ]);
 
-        $id_ta    = $validated['id_ta'];
-        $siswaIds = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
+        $id_ta       = $validated['id_ta'];
+        $id_semester = $validated['id_semester'];
+        $siswaIds    = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
 
         $kriteriaCount = Kriteria::count();
         $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
             ->where('id_ta', $id_ta)
+            ->where('id_semester', $id_semester)
             ->whereIn('id_siswa', $siswaIds)
             ->groupBy('id_siswa')
             ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
@@ -253,10 +271,11 @@ class PerhitunganController extends Controller
 
         DB::beginTransaction();
         try {
-            $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds);
+            $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds, $id_semester);
             $userId       = auth()->id();
 
             HasilAkhir::where('id_ta', $id_ta)
+                ->where('id_semester', $id_semester)
                 ->where('user_id', $userId)
                 ->whereIn('id_siswa', $siswaIds)
                 ->update([
@@ -269,6 +288,7 @@ class PerhitunganController extends Controller
                     [
                         'id_siswa' => $moora['id_siswa'],
                         'id_ta' => $id_ta,
+                        'id_semester' => $id_semester,
                         'user_id' => $userId,
                     ],
                     [
@@ -280,7 +300,7 @@ class PerhitunganController extends Controller
 
             DB::commit();
 
-            return redirect()->route('walikelas.perhitungan.moora.index', ['tahun_ajaran' => $id_ta])
+            return redirect()->route('walikelas.perhitungan.moora.index', ['tahun_ajaran' => $id_ta, 'semester' => $id_semester])
                 ->with('success', "Perhitungan MOORA berhasil! {$studentsWithCompletePenilaian} siswa telah di-ranking.");
 
         } catch (\Exception $e) {
@@ -289,16 +309,17 @@ class PerhitunganController extends Controller
         }
     }
 
-    public function showStepsMoora($id_ta)
+    public function showStepsMoora(Request $request, $id_ta)
     {
         $kelas   = $this->getKelas();
         $kelasId = $kelas->id_kelas;
+        $id_semester = $request->get('semester');
 
         $tahunAjaran  = TahunAjaran::findOrFail($id_ta);
         $kriteriaList = Kriteria::orderBy('kode_kriteria')->get();
         $siswaIds     = Siswa::where('id_kelas', $kelasId)->pluck('id_siswa')->toArray();
 
-        $results       = $this->mooraCalculator->calculate($id_ta, $siswaIds);
+        $results       = $this->mooraCalculator->calculate($id_ta, $siswaIds, $id_semester);
         $detailedSteps = $this->mooraCalculator->getDetailedSteps();
 
         $perPage         = 10;
@@ -321,7 +342,7 @@ class PerhitunganController extends Controller
         $step4Steps = $buildPaginator('step4_page');
 
         return view('walikelas.perhitungan.moora.steps', compact(
-            'tahunAjaran', 'kriteriaList', 'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps'
+            'tahunAjaran', 'kriteriaList', 'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'id_semester'
         ));
     }
 
@@ -332,16 +353,18 @@ class PerhitunganController extends Controller
         return $this->indexSmart($request);
     }
 
-    public function compare($id_ta)
+    public function compare(Request $request, $id_ta)
     {
         $kelas   = $this->getKelas();
         $kelasId = $kelas->id_kelas;
+        $filterSemester = $request->get('semester');
 
         $tahunAjaran = TahunAjaran::findOrFail($id_ta);
         $userId      = auth()->id();
 
         $baseQuery = HasilAkhir::query()
             ->where('id_ta', $id_ta)
+            ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->where('user_id', $userId)
             ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId));
 
@@ -358,8 +381,10 @@ class PerhitunganController extends Controller
             ? round(($agreement / $totalData) * 100, 2)
             : 0;
 
+        $semesterList = Semester::orderBy('id_semester')->get();
+
         return view('walikelas.perhitungan.compare', compact(
-            'tahunAjaran', 'hasilList', 'agreementPercentage'
+            'tahunAjaran', 'hasilList', 'agreementPercentage', 'semesterList', 'filterSemester'
         ));
     }
 }

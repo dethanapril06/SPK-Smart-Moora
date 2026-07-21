@@ -31,18 +31,29 @@
             <div class="card-body">
                 <form action="{{ route('walikelas.perhitungan.moora.index') }}" method="GET">
                     <div class="row g-3">
-                        <div class="col-md-8">
+                        <div class="col-md-5">
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran <span class="text-danger">*</span></label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran" required>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4 mt-3 text-end">
-                            <label class="form-label">&nbsp;</label>
+                        <div class="col-md-4">
+                            <label class="form-label" for="semester">Semester</label>
+                            <select class="form-select" id="semester" name="semester">
+                                <option value="">Semua Semester</option>
+                                @foreach ($semesterList as $s)
+                                    <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>
+                                        {{ $s->nama_semester }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mt-3 text-end align-self-end">
+                            <label class="form-label d-none d-md-block">&nbsp;</label>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary"><i class="bx bx-search"></i> Filter</button>
                             </div>
@@ -88,10 +99,12 @@
                     <form id="calculate-form" action="{{ route('walikelas.perhitungan.moora.calculate') }}" method="POST" class="d-none">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
+                        <input type="hidden" name="id_semester" value="{{ $filterSemester }}">
                     </form>
                     <form id="recalculate-form" action="{{ route('walikelas.perhitungan.moora.calculate') }}" method="POST" class="d-none">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
+                        <input type="hidden" name="id_semester" value="{{ $filterSemester }}">
                     </form>
                 @endif
             </div>
@@ -103,7 +116,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5>Hasil Ranking MOORA - {{ $kelas->nama_kelas }}</h5>
                     <div>
-                        <a href="{{ route('walikelas.perhitungan.moora.steps', $filterTA) }}"
+                        <a href="{{ route('walikelas.perhitungan.moora.steps', ['id_ta' => $filterTA, 'semester' => $filterSemester]) }}"
                             class="btn btn-sm btn-success">
                             <i class="bx bx-detail"></i> Langkah MOORA
                         </a>

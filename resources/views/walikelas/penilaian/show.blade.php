@@ -67,10 +67,10 @@
                                         @php
                                             $penilaian = $penilaianList[$kriteria->id_kriteria] ?? null;
                                         @endphp
-                                        <tr class="{{ $kriteria->kode_kriteria == 'C5' ? 'table-warning' : '' }}">
+                                        <tr class="{{ $kriteria->kode_kriteria == 'C6' ? 'table-warning' : '' }}">
                                             <td>
                                                 <strong>{{ $kriteria->kode_kriteria }}</strong>
-                                                @if ($kriteria->kode_kriteria == 'C5')
+                                                @if ($kriteria->kode_kriteria == 'C6')
                                                     <i class="bx bx-bolt text-warning" title="Auto"></i>
                                                 @endif
                                             </td>
@@ -107,7 +107,7 @@
                                 <li><strong>Nilai Asli:</strong> Nilai mentah hasil agregasi dari data rapor</li>
                                 <li><strong>Nilai Konversi:</strong> Nilai yang sudah dikonversi berdasarkan sub kriteria
                                 </li>
-                                <li><i class="bx bx-bolt text-warning"></i> <strong>C5</strong> dihitung otomatis dari total
+                                <li><i class="bx bx-bolt text-warning"></i> <strong>C6</strong> dihitung otomatis dari total
                                     poin pelanggaran</li>
                             </ul>
                         </div>

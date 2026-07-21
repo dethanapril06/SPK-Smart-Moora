@@ -39,7 +39,7 @@ class SiswaController extends Controller
     public function create()
     {
         $kelas = Kelas::orderBy('nama_kelas')->get();
-        $tahunAjaran = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaran = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
         
         return view('admin.siswa.create', compact('kelas', 'tahunAjaran'));
     }
@@ -89,7 +89,7 @@ class SiswaController extends Controller
     public function edit(Siswa $siswa)
     {
         $kelas = Kelas::orderBy('nama_kelas')->get();
-        $tahunAjaran = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaran = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
         
         return view('admin.siswa.edit', compact('siswa', 'kelas', 'tahunAjaran'));
     }

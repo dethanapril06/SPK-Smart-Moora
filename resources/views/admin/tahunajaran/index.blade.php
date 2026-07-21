@@ -80,9 +80,14 @@
                                 </td>
                                 <td><strong>{{ $item->tahun_ajaran }}</strong></td>
                                 <td>
-                                    <span class="badge bg-label-{{ $item->semester == 'Ganjil' ? 'primary' : 'info' }}">
-                                        {{ $item->semester }}
-                                    </span>
+                                    @forelse ($item->semesters as $semester)
+                                        <span
+                                            class="badge bg-label-{{ $semester->nama_semester == 'Ganjil' ? 'primary' : 'info' }} me-1">
+                                            {{ $semester->nama_semester }}{{ $semester->is_active ? ' (Aktif)' : '' }}
+                                        </span>
+                                    @empty
+                                        <span class="badge bg-label-secondary">Belum Ada Semester</span>
+                                    @endforelse
                                 </td>
                                 <td>
                                     @if ($item->is_active)
@@ -105,8 +110,7 @@
                                             </a>
                                             @if (!$item->is_active)
                                                 <a class="dropdown-item btn-activate" href="javascript:void(0)"
-                                                    data-id="{{ $item->id_ta }}"
-                                                    data-name="{{ $item->tahun_ajaran }} - {{ $item->semester }}">
+                                                    data-id="{{ $item->id_ta }}" data-name="{{ $item->tahun_ajaran }}">
                                                     <i class="bx bx-check-circle me-1"></i> Aktifkan
                                                 </a>
                                                 <form id="activate-form-{{ $item->id_ta }}"
@@ -121,8 +125,7 @@
                                                 <i class="bx bx-edit-alt me-1"></i> Edit
                                             </a>
                                             <a class="dropdown-item btn-delete" href="javascript:void(0)"
-                                                data-id="{{ $item->id_ta }}"
-                                                data-name="{{ $item->tahun_ajaran }} - {{ $item->semester }}">
+                                                data-id="{{ $item->id_ta }}" data-name="{{ $item->tahun_ajaran }}">
                                                 <i class="bx bx-trash me-1"></i> Hapus
                                             </a>
                                             <form id="delete-form-{{ $item->id_ta }}"

@@ -31,7 +31,7 @@ class KriteriaSeeder extends Seeder
             ],
             [
                 'kode_kriteria' => 'C3',
-                'nama_kriteria' => 'Sikap',
+                'nama_kriteria' => 'Sikap Spiritual',
                 'jenis_kriteria' => 'Benefit',
                 'bobot' => 3,
                 'created_at' => now(),
@@ -39,7 +39,7 @@ class KriteriaSeeder extends Seeder
             ],
             [
                 'kode_kriteria' => 'C4',
-                'nama_kriteria' => 'Ekstrakulikuler',
+                'nama_kriteria' => 'Sikap Sosial',
                 'jenis_kriteria' => 'Benefit',
                 'bobot' => 3,
                 'created_at' => now(),
@@ -47,6 +47,14 @@ class KriteriaSeeder extends Seeder
             ],
             [
                 'kode_kriteria' => 'C5',
+                'nama_kriteria' => 'Ekstrakulikuler',
+                'jenis_kriteria' => 'Benefit',
+                'bobot' => 3,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'kode_kriteria' => 'C6',
                 'nama_kriteria' => 'Jumlah poin pelanggaran',
                 'jenis_kriteria' => 'Cost',
                 'bobot' => 2,
@@ -54,7 +62,7 @@ class KriteriaSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'kode_kriteria' => 'C6',
+                'kode_kriteria' => 'C7',
                 'nama_kriteria' => 'Absensi',
                 'jenis_kriteria' => 'Cost',
                 'bobot' => 3,

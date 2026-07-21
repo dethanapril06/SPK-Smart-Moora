@@ -13,6 +13,7 @@ class NilaiKeterampilan extends Model
         'id_siswa',
         'id_mapel',
         'id_ta',
+        'id_semester',
         'nilai',
     ];
 
@@ -29,5 +30,10 @@ class NilaiKeterampilan extends Model
     public function tahunAjaran()
     {
         return $this->belongsTo(TahunAjaran::class, 'id_ta');
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'id_semester');
     }
 }

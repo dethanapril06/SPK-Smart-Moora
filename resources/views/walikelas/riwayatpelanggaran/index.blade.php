@@ -27,23 +27,34 @@
             <div class="card-body">
                 <form action="{{ route('walikelas.riwayatpelanggaran.index') }}" method="GET">
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label" for="search">Cari Siswa / Pelanggaran</label>
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="NISN, nama siswa, atau pelanggaran..." value="{{ $search }}">
                         </div>
-                        <div class="col-md-4 mt-3">
+                        <div class="col-md-3">
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran</label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran">
                                 <option value="">Semua Tahun Ajaran</option>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4 mt-3">
+                        <div class="col-md-3">
+                            <label class="form-label" for="semester">Semester</label>
+                            <select class="form-select" id="semester" name="semester">
+                                <option value="">Semua Semester</option>
+                                @foreach ($semesterList as $s)
+                                    <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>
+                                        {{ $s->nama_semester }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label" for="kategori">Kategori Pelanggaran</label>
                             <select class="form-select" id="kategori" name="kategori">
                                 <option value="">Semua Kategori</option>
@@ -54,12 +65,12 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 mt-3">
                             <label class="form-label" for="tanggal_mulai">Tanggal Mulai</label>
                             <input type="date" class="form-control" id="tanggal_mulai" name="tanggal_mulai"
                                 value="{{ $filterTanggalMulai }}">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 mt-3">
                             <label class="form-label" for="tanggal_selesai">Tanggal Selesai</label>
                             <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai"
                                 value="{{ $filterTanggalSelesai }}">

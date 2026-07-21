@@ -18,7 +18,7 @@
             <div class="card-body">
                 <form action="{{ route('kepalasekolah.penilaian.index') }}" method="GET">
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label" for="search">Cari Siswa</label>
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="NISN atau nama siswa..." value="{{ $search }}">
@@ -29,8 +29,18 @@
                                 <option value="">Semua Tahun Ajaran</option>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - {{ $ta->semester }}
-                                        {{ $ta->is_active ? '(Aktif)' : '' }}
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="semester">Semester</label>
+                            <select class="form-select" id="semester" name="semester">
+                                <option value="">Semua Semester</option>
+                                @foreach ($semesterList as $s)
+                                    <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>
+                                        {{ $s->nama_semester }}
                                     </option>
                                 @endforeach
                             </select>
@@ -47,11 +57,8 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary"><i class="bx bx-search"></i> Cari</button>
-                            </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-primary"><i class="bx bx-search"></i> Cari</button>
                         </div>
                     </div>
                 </form>
@@ -71,7 +78,7 @@
                             @foreach ($kriteriaList as $kriteria)
                                 <th class="text-center" style="min-width: 80px;">
                                     {{ $kriteria->kode_kriteria }}
-                                    @if ($kriteria->kode_kriteria == 'C5')
+                                    @if ($kriteria->kode_kriteria == 'C6')
                                         <i class="bx bx-bolt text-warning" title="Auto"></i>
                                     @endif
                                 </th>
@@ -84,6 +91,7 @@
                             @php
                                 $penilaianBySiswa = $siswa->penilaian
                                     ->where('id_ta', $filterTA ?: $siswa->id_ta)
+                                    ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                                     ->keyBy('id_kriteria');
                             @endphp
                             <tr>
@@ -111,7 +119,7 @@
                                 @endforeach
                                 <td class="text-center">
                                     @if ($penilaianBySiswa->count() > 0)
-                                        <a href="{{ route('kepalasekolah.penilaian.show', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
+                                        <a href="{{ route('kepalasekolah.penilaian.show', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta, 'semester' => $filterSemester]) }}"
                                             class="btn btn-sm btn-icon btn-label-info" title="Detail">
                                             <i class="bx bx-show"></i>
                                         </a>

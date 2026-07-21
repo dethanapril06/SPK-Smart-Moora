@@ -51,6 +51,10 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
         ->name('admin.pengguna.reset-password');
 
     // Kelas Management Routes
+    Route::get('kelas/naik-kelas', [\App\Http\Controllers\Admin\KelasController::class, 'naikKelas'])
+        ->name('admin.kelas.naik-kelas.index');
+    Route::post('kelas/naik-kelas', [\App\Http\Controllers\Admin\KelasController::class, 'prosesNaikKelas'])
+        ->name('admin.kelas.naik-kelas.store');
     Route::resource('kelas', \App\Http\Controllers\Admin\KelasController::class, [
         'as' => 'admin'
     ]);
@@ -59,6 +63,8 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
     Route::resource('tahunajaran', \App\Http\Controllers\Admin\TahunAjaranController::class, [
         'as' => 'admin'
     ]);
+    Route::put('tahunajaran/{tahunajaran}/semester/{semester}/set-active', [\App\Http\Controllers\Admin\TahunAjaranController::class, 'setActiveSemester'])
+        ->name('admin.tahunajaran.set-active-semester');
     Route::put('tahunajaran/{tahunajaran}/set-active', [\App\Http\Controllers\Admin\TahunAjaranController::class, 'setActive'])
         ->name('admin.tahunajaran.set-active');
 

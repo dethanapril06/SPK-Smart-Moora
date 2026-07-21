@@ -15,6 +15,7 @@ use App\Models\NilaiKeterampilan;
 use App\Models\NilaiSikap;
 use App\Models\NilaiEkstrakurikuler;
 use App\Models\NilaiAbsensi;
+use App\Models\Semester;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +27,7 @@ class PenilaianController extends Controller
     public function index(Request $request)
     {
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
         $filterKelas = $request->get('kelas');
         $search = $request->get('search');
         
@@ -33,7 +35,12 @@ class PenilaianController extends Controller
         $kriteriaList = Kriteria::orderBy('kode_kriteria')->get();
         
         // Query siswa with their penilaian
-        $siswaQuery = Siswa::with(['kelas', 'tahunAjaran', 'penilaian.kriteria'])
+        $siswaQuery = Siswa::with(['kelas', 'tahunAjaran', 'penilaian' => function ($query) use ($filterSemester) {
+            if ($filterSemester) {
+                $query->where('id_semester', $filterSemester);
+            }
+            $query->with('kriteria');
+        }])
             ->when($filterTA, function ($query, $filterTA) {
                 return $query->where('id_ta', $filterTA);
             })
@@ -47,20 +54,24 @@ class PenilaianController extends Controller
         
         $siswaList = $siswaQuery->paginate(10)->appends([
             'tahun_ajaran' => $filterTA,
+            'semester' => $filterSemester,
             'kelas' => $filterKelas,
             'search' => $search
         ]);
         
         // Data for filters
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         
         return view('admin.penilaian.index', compact(
             'siswaList',
             'kriteriaList',
             'tahunAjaranList',
+            'semesterList',
             'kelasList',
             'filterTA',
+            'filterSemester',
             'filterKelas',
             'search'
         ));
@@ -74,26 +85,30 @@ class PenilaianController extends Controller
         $siswa = Siswa::with(['kelas', 'tahunAjaran'])->findOrFail($id_siswa);
         
         $filterTA = $request->get('ta', $siswa->id_ta);
+        $filterSemester = $request->get('semester');
         
-        // Get penilaian for this siswa and TA
+        // Get penilaian for this siswa and TA/Semester
         $penilaianList = Penilaian::with('kriteria')
             ->where('id_siswa', $id_siswa)
             ->where('id_ta', $filterTA)
+            ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->get()
             ->keyBy('id_kriteria');
         
         $kriteriaList = Kriteria::orderBy('kode_kriteria')->get();
+        $semesterList = Semester::where('id_ta', $filterTA)->get();
         
-        return view('admin.penilaian.show', compact('siswa', 'penilaianList', 'kriteriaList', 'filterTA'));
+        return view('admin.penilaian.show', compact('siswa', 'penilaianList', 'kriteriaList', 'semesterList', 'filterTA', 'filterSemester'));
     }
 
     /**
-     * Calculate C5 (Total Poin Pelanggaran) for a student in a specific TA
+     * Calculate C6 (Total Poin Pelanggaran) for a student in a specific TA & Semester
      */
-    private function calculateC5($id_siswa, $id_ta)
+    private function calculateC5($id_siswa, $id_ta, $id_semester = null)
     {
         $totalPoin = RiwayatPelanggaran::where('id_siswa', $id_siswa)
             ->where('id_ta', $id_ta)
+            ->when($id_semester, fn($q, $s) => $q->where('id_semester', $s))
             ->with('jenisPelanggaran')
             ->get()
             ->sum(function($riwayat) {
@@ -121,14 +136,15 @@ class PenilaianController extends Controller
     /**
      * Calculate average nilai for mapel assigned to student's class.
      */
-    private function calculateMapelAverage(string $modelClass, $siswa, $id_ta)
+    private function calculateMapelAverage(string $modelClass, $siswa, $id_ta, $id_semester = null)
     {
         $mapelIds = DB::table('tb_kelas_mata_pelajaran')
             ->where('id_kelas', $siswa->id_kelas)
             ->pluck('id_mapel');
 
         $query = $modelClass::where('id_siswa', $siswa->id_siswa)
-            ->where('id_ta', $id_ta);
+            ->where('id_ta', $id_ta)
+            ->when($id_semester, fn($q, $s) => $q->where('id_semester', $s));
 
         if ($mapelIds->isNotEmpty()) {
             $query->whereIn('id_mapel', $mapelIds);
@@ -138,25 +154,26 @@ class PenilaianController extends Controller
     }
 
     /**
-     * AJAX: Get C5 value for a student
+     * AJAX: Get C6 value for a student
      */
     public function getC5(Request $request)
     {
         $id_siswa = $request->get('id_siswa');
         $id_ta = $request->get('id_ta');
+        $id_semester = $request->get('id_semester');
         
         if (!$id_siswa || !$id_ta) {
             return response()->json(['error' => 'Missing parameters'], 400);
         }
         
-        $totalPoin = $this->calculateC5($id_siswa, $id_ta);
+        $totalPoin = $this->calculateC5($id_siswa, $id_ta, $id_semester);
         
-        // Get C5 kriteria
-        $kriteriaC5 = Kriteria::where('kode_kriteria', 'C5')->first();
+        // Get C6 kriteria
+        $kriteriaC6 = Kriteria::where('kode_kriteria', 'C6')->first();
         $nilaiKonversi = null;
         
-        if ($kriteriaC5) {
-            $nilaiKonversi = $this->convertNilaiToSubKriteria($kriteriaC5->id_kriteria, $totalPoin);
+        if ($kriteriaC6) {
+            $nilaiKonversi = $this->convertNilaiToSubKriteria($kriteriaC6->id_kriteria, $totalPoin);
         }
         
         return response()->json([
@@ -172,9 +189,11 @@ class PenilaianController extends Controller
     {
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
         ]);
 
         $id_ta = $validated['id_ta'];
+        $id_semester = $validated['id_semester'];
         $siswaList = Siswa::where('id_ta', $id_ta)->get();
         $kriteriaList = Kriteria::all()->keyBy('kode_kriteria');
 
@@ -183,31 +202,35 @@ class PenilaianController extends Controller
             $count = 0;
             foreach ($siswaList as $siswa) {
                 // C1: Rata-rata Nilai Pengetahuan
-                $avgPengetahuan = $this->calculateMapelAverage(NilaiPengetahuan::class, $siswa, $id_ta);
+                $avgPengetahuan = $this->calculateMapelAverage(NilaiPengetahuan::class, $siswa, $id_ta, $id_semester);
 
                 // C2: Rata-rata Nilai Keterampilan
-                $avgKeterampilan = $this->calculateMapelAverage(NilaiKeterampilan::class, $siswa, $id_ta);
+                $avgKeterampilan = $this->calculateMapelAverage(NilaiKeterampilan::class, $siswa, $id_ta, $id_semester);
 
-                // C3: Sikap (average of converted spiritual + sosial)
+                // C3: Sikap Spiritual, C4: Sikap Sosial
                 $sikap = NilaiSikap::where('id_siswa', $siswa->id_siswa)
                     ->where('id_ta', $id_ta)
+                    ->where('id_semester', $id_semester)
                     ->first();
-                $nilaiSikap = $sikap ? $sikap->nilai_rata_rata : null;
+                $nilaiSikapSpiritual = $sikap ? $sikap->nilai_spiritual : null;
+                $nilaiSikapSosial = $sikap ? $sikap->nilai_sosial : null;
 
-                // C4: Ekstrakurikuler (average of converted predikats)
+                // C5: Ekstrakurikuler (average of converted predikats)
                 $ekskulList = NilaiEkstrakurikuler::where('id_siswa', $siswa->id_siswa)
                     ->where('id_ta', $id_ta)
+                    ->where('id_semester', $id_semester)
                     ->get();
                 $nilaiEkskul = $ekskulList->count() > 0
                     ? $ekskulList->avg(fn($e) => NilaiEkstrakurikuler::konversiPredikat($e->predikat))
                     : null;
 
-                // C5: Total Poin Pelanggaran
-                $totalPoinPelanggaran = $this->calculateC5($siswa->id_siswa, $id_ta);
+                // C6: Total Poin Pelanggaran
+                $totalPoinPelanggaran = $this->calculateC5($siswa->id_siswa, $id_ta, $id_semester);
 
-                // C6: Total Absensi (sakit + izin + alpa)
+                // C7: Total Absensi (sakit + izin + alpa)
                 $absensi = NilaiAbsensi::where('id_siswa', $siswa->id_siswa)
                     ->where('id_ta', $id_ta)
+                    ->where('id_semester', $id_semester)
                     ->first();
                 $totalAbsensi = $absensi ? $absensi->total_tidak_hadir : null;
 
@@ -215,10 +238,11 @@ class PenilaianController extends Controller
                 $mapping = [
                     'C1' => $avgPengetahuan !== null ? round($avgPengetahuan, 2) : null,
                     'C2' => $avgKeterampilan !== null ? round($avgKeterampilan, 2) : null,
-                    'C3' => $nilaiSikap !== null ? round($nilaiSikap, 2) : null,
-                    'C4' => $nilaiEkskul !== null ? round($nilaiEkskul, 2) : null,
-                    'C5' => $totalPoinPelanggaran,
-                    'C6' => $totalAbsensi,
+                    'C3' => $nilaiSikapSpiritual !== null ? round($nilaiSikapSpiritual, 2) : null,
+                    'C4' => $nilaiSikapSosial !== null ? round($nilaiSikapSosial, 2) : null,
+                    'C5' => $nilaiEkskul !== null ? round($nilaiEkskul, 2) : null,
+                    'C6' => $totalPoinPelanggaran,
+                    'C7' => $totalAbsensi,
                 ];
 
                 foreach ($mapping as $kode => $nilaiAsli) {
@@ -232,9 +256,10 @@ class PenilaianController extends Controller
                         [
                             'id_siswa' => $siswa->id_siswa,
                             'id_kriteria' => $kriteria->id_kriteria,
-                            'id_ta' => $id_ta,
+                            'id_semester' => $id_semester,
                         ],
                         [
+                            'id_ta' => $id_ta,
                             'nilai_asli' => $nilaiAsli,
                             'nilai_konversi' => $nilaiKonversi,
                         ]
@@ -244,7 +269,7 @@ class PenilaianController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('admin.penilaian.index')
+            return redirect()->route('admin.penilaian.index', ['tahun_ajaran' => $id_ta, 'semester' => $id_semester])
                 ->with('success', "Berhasil mengagregasi data. {$count} penilaian diperbarui untuk " . $siswaList->count() . " siswa.");
         } catch (\Exception $e) {
             DB::rollBack();

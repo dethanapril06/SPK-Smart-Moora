@@ -43,7 +43,7 @@
 
                     <h6 class="mb-3 text-primary"><i class="bx bx-error me-2"></i>Data Pelanggaran</h6>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label" for="id_ta">Tahun Ajaran <span
                                         class="text-danger">*</span></label>
@@ -52,8 +52,7 @@
                                     @foreach ($tahunAjaranList as $ta)
                                         <option value="{{ $ta->id_ta }}"
                                             {{ old('id_ta', $riwayatpelanggaran->id_ta) == $ta->id_ta ? 'selected' : '' }}>
-                                            {{ $ta->tahun_ajaran }} - {{ $ta->semester }}
-                                            {{ $ta->is_active ? '(Aktif)' : '' }}
+                                            {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -62,7 +61,26 @@
                                 @enderror
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label" for="id_semester">Semester <span
+                                        class="text-danger">*</span></label>
+                                <select id="id_semester" name="id_semester"
+                                    class="form-select @error('id_semester') is-invalid @enderror" required>
+                                    <option value="">-- Pilih Semester --</option>
+                                    @foreach ($semesterList as $s)
+                                        <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}"
+                                            {{ old('id_semester', $riwayatpelanggaran->id_semester) == $s->id_semester ? 'selected' : '' }}>
+                                            {{ $s->nama_semester }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('id_semester')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label class="form-label" for="tanggal_kejadian">Tanggal Kejadian <span
                                         class="text-danger">*</span></label>

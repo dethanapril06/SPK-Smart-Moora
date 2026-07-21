@@ -11,16 +11,20 @@ class MooraCalculator
     protected $detailedSteps = [];
     
     /**
-     * Calculate MOORA scores for all students in a given TA
+     * Calculate MOORA scores for all students in a given TA and Semester
      * @param int $id_ta
      * @param array|null $siswaIds Optional array of siswa IDs to filter
+     * @param int|null $id_semester Optional semester ID to filter
      */
-    public function calculate($id_ta, ?array $siswaIds = null): array
+    public function calculate($id_ta, ?array $siswaIds = null, $id_semester = null): array
     {
         $this->detailedSteps = [];
         
-        // Get all penilaian for this TA, grouped by student
+        // Get all penilaian for this TA and semester, grouped by student
         $penilaianData = Penilaian::where('id_ta', $id_ta)
+            ->when($id_semester, function ($query, $id_semester) {
+                return $query->where('id_semester', $id_semester);
+            })
             ->when($siswaIds, function ($query, $siswaIds) {
                 return $query->whereIn('id_siswa', $siswaIds);
             })

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NilaiKeterampilan;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
@@ -24,16 +25,18 @@ class NilaiKeterampilanController extends Controller
     {
         $kelas = $this->getKelas();
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
         
         $mapelList = MataPelajaran::orderBy('kode_mapel')->get();
 
         $siswaList = collect();
 
-        if ($filterTA) {
-            $siswaList = Siswa::with(['nilaiKeterampilan' => function ($q) use ($filterTA) {
-                $q->where('id_ta', $filterTA);
+        if ($filterTA && $filterSemester) {
+            $siswaList = Siswa::with(['nilaiKeterampilan' => function ($q) use ($filterTA, $filterSemester) {
+                $q->where('id_ta', $filterTA)->where('id_semester', $filterSemester);
             }])
                 ->where('id_kelas', $kelas->id_kelas)
                 ->where('id_ta', $filterTA)
@@ -42,7 +45,7 @@ class NilaiKeterampilanController extends Controller
         }
 
         return view('walikelas.nilaiketerampilan.index', compact(
-            'siswaList', 'tahunAjaranList', 'mapelList', 'filterTA', 'kelas'
+            'siswaList', 'tahunAjaranList', 'semesterList', 'mapelList', 'filterTA', 'filterSemester', 'kelas'
         ));
     }
 
@@ -52,6 +55,7 @@ class NilaiKeterampilanController extends Controller
 
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'nilai' => 'required|array',
             'nilai.*.*' => 'nullable|numeric|min:0|max:100',
         ]);
@@ -69,6 +73,7 @@ class NilaiKeterampilanController extends Controller
                                 'id_siswa' => $id_siswa,
                                 'id_mapel' => $id_mapel,
                                 'id_ta' => $validated['id_ta'],
+                                'id_semester' => $validated['id_semester'],
                             ],
                             ['nilai' => $nilai]
                         );

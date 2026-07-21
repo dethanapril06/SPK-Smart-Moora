@@ -34,13 +34,24 @@
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="NISN, nama siswa, atau pelanggaran..." value="{{ $search }}">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran</label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran">
                                 <option value="">Semua Tahun Ajaran</option>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="semester">Semester</label>
+                            <select class="form-select" id="semester" name="semester">
+                                <option value="">Semua Semester</option>
+                                @foreach ($semesterList as $s)
+                                    <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>
+                                        {{ $s->nama_semester }}
                                     </option>
                                 @endforeach
                             </select>

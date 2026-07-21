@@ -32,10 +32,21 @@
                     <div class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label">Tahun Ajaran <span class="text-danger">*</span></label>
-                            <select class="form-select" name="tahun_ajaran" required>
+                            <select class="form-select" id="tahun_ajaran" name="tahun_ajaran" required>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Semester</label>
+                            <select class="form-select" id="semester" name="semester">
+                                <option value="">Semua Semester</option>
+                                @foreach ($semesterList as $s)
+                                    <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>
+                                        {{ $s->nama_semester }}
                                     </option>
                                 @endforeach
                             </select>
@@ -67,13 +78,10 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bx bx-search"></i> Filter
-                                </button>
-                            </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bx bx-search"></i> Filter
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -88,15 +96,15 @@
                         <i class="bx bx-trophy text-warning"></i> Hasil Ranking SMART — {{ $sourceName }}
                     </h5>
                     <div class="btn-group">
-                        <a href="{{ route('kepalasekolah.perhitungan.finalis.smart.index', ['tahun_ajaran' => $filterTA]) }}"
+                        <a href="{{ route('kepalasekolah.perhitungan.finalis.smart.index', ['tahun_ajaran' => $filterTA, 'semester' => $filterSemester]) }}"
                             class="btn btn-sm btn-secondary">
                             <i class="bx bx-medal"></i> Finalis
                         </a>
-                        <a href="{{ route('kepalasekolah.report.smart.pdf', ['tahun_ajaran' => $filterTA, 'source' => $source, 'kelas' => $filterKelas]) }}"
+                        <a href="{{ route('kepalasekolah.report.smart.pdf', ['tahun_ajaran' => $filterTA, 'semester' => $filterSemester, 'source' => $source, 'kelas' => $filterKelas]) }}"
                             class="btn btn-sm btn-danger" target="_blank">
                             <i class="bx bxs-file-pdf"></i> Export PDF
                         </a>
-                        <a href="{{ route('kepalasekolah.report.smart.excel', ['tahun_ajaran' => $filterTA, 'source' => $source, 'kelas' => $filterKelas]) }}"
+                        <a href="{{ route('kepalasekolah.report.smart.excel', ['tahun_ajaran' => $filterTA, 'semester' => $filterSemester, 'source' => $source, 'kelas' => $filterKelas]) }}"
                             class="btn btn-sm btn-success">
                             <i class="bx bxs-file-export"></i> Export Excel
                         </a>

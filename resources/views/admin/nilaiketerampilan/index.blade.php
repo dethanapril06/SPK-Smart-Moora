@@ -29,19 +29,29 @@
             <div class="card-body">
                 <form action="{{ route('admin.nilaiketerampilan.index') }}" method="GET">
                     <div class="row align-items-end">
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <label class="form-label">Tahun Ajaran</label>
-                            <select name="tahun_ajaran" class="form-select">
+                            <select id="tahun_ajaran" name="tahun_ajaran" class="form-select">
                                 <option value="">-- Pilih Tahun Ajaran --</option>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - Semester {{ $ta->semester }}
-                                        {{ $ta->is_active ? '(Aktif)' : '' }}
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-5 mt-3">
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label">Semester</label>
+                            <select id="semester" name="semester" class="form-select">
+                                <option value="">-- Pilih Semester --</option>
+                                @foreach ($semesterList as $s)
+                                    <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>
+                                        {{ $s->nama_semester }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mt-3">
                             <label class="form-label">Kelas</label>
                             <select name="kelas" class="form-select">
                                 <option value="">-- Pilih Kelas --</option>
@@ -53,21 +63,22 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2 mt-3 text-end">
-                            <button type="submit" class="btn btn-primary"><i class="bx bx-filter-alt"></i> Filter</button>
+                        <div class="col-md-1 mt-3 text-end">
+                            <button type="submit" class="btn btn-sm btn-primary"><i class="bx bx-filter-alt"></i> Filter</button>
                         </div>
                     </div>
                 </form>
             </div>
         </div>
 
-        @if ($filterTA && $filterKelas && $siswaList->count() > 0 && $mapelList->count() > 0)
+        @if ($filterTA && $filterSemester && $filterKelas && $siswaList->count() > 0 && $mapelList->count() > 0)
             <div class="card">
                 <h5 class="card-header">Input Nilai Keterampilan (C2)</h5>
                 <div class="card-body">
                     <form action="{{ route('admin.nilaiketerampilan.store') }}" method="POST">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
+                        <input type="hidden" name="id_semester" value="{{ $filterSemester }}">
                         <input type="hidden" name="id_kelas" value="{{ $filterKelas }}">
                         <div class="table-responsive">
                             <table class="table table-bordered">

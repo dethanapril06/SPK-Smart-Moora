@@ -77,6 +77,7 @@
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="id_ta" value="{{ $selectedTA }}">
+                        <input type="hidden" name="id_semester" value="{{ $selectedSemester }}">
 
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover mb-0">
@@ -158,6 +159,7 @@
                 <form action="{{ route('admin.nilaiekstrakurikuler.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="id_ta" value="{{ $selectedTA }}">
+                    <input type="hidden" name="id_semester" value="{{ $selectedSemester }}">
                     <input type="hidden" name="id_kelas" value="{{ $siswa->id_kelas }}">
                     <input type="hidden" name="id_siswa" value="{{ $siswa->id_siswa }}">
                     <input type="hidden" name="redirect_to_edit" value="1">

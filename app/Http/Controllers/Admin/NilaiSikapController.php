@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NilaiSikap;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,16 +16,18 @@ class NilaiSikapController extends Controller
     public function index(Request $request)
     {
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
         $filterKelas = $request->get('kelas');
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
 
         $siswaList = collect();
 
-        if ($filterTA && $filterKelas) {
-            $siswaList = Siswa::with(['nilaiSikap' => function ($q) use ($filterTA) {
-                $q->where('id_ta', $filterTA);
+        if ($filterTA && $filterSemester && $filterKelas) {
+            $siswaList = Siswa::with(['nilaiSikap' => function ($q) use ($filterTA, $filterSemester) {
+                $q->where('id_ta', $filterTA)->where('id_semester', $filterSemester);
             }])
                 ->where('id_kelas', $filterKelas)
                 ->where('id_ta', $filterTA)
@@ -33,8 +36,8 @@ class NilaiSikapController extends Controller
         }
 
         return view('admin.nilaisikap.index', compact(
-            'siswaList', 'tahunAjaranList', 'kelasList',
-            'filterTA', 'filterKelas'
+            'siswaList', 'tahunAjaranList', 'semesterList', 'kelasList',
+            'filterTA', 'filterSemester', 'filterKelas'
         ));
     }
 
@@ -42,6 +45,7 @@ class NilaiSikapController extends Controller
     {
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'id_kelas' => 'required',
             'sikap_spiritual' => 'required|array',
             'sikap_spiritual.*' => 'required|in:Sangat Baik,Baik,Cukup,Kurang',
@@ -56,6 +60,7 @@ class NilaiSikapController extends Controller
                     [
                         'id_siswa' => $id_siswa,
                         'id_ta' => $validated['id_ta'],
+                        'id_semester' => $validated['id_semester'],
                     ],
                     [
                         'sikap_spiritual' => $spiritual,

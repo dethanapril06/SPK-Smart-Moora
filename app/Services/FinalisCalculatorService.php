@@ -18,12 +18,12 @@ class FinalisCalculatorService
     ) {
     }
 
-    public function calculate(int $idTa, string $method, ?int $userId = null): array
+    public function calculate(int $idTa, string $method, ?int $userId = null, ?int $idSemester = null): array
     {
         $method = strtolower($method);
         $this->validateMethod($method);
 
-        $candidates = $this->getClassCandidatesByTingkat($idTa, $method);
+        $candidates = $this->getClassCandidatesByTingkat($idTa, $method, $idSemester);
 
         $totalCandidates = collect($candidates['candidates_by_tingkat'])->flatten(1)->count();
         if ($totalCandidates < 2) {
@@ -31,8 +31,9 @@ class FinalisCalculatorService
         }
 
         $savedResults = [];
-        DB::transaction(function () use ($idTa, $method, $userId, $candidates, &$savedResults) {
+        DB::transaction(function () use ($idTa, $method, $userId, $idSemester, $candidates, &$savedResults) {
             HasilFinalis::where('id_ta', $idTa)
+                ->when($idSemester, fn($q) => $q->where('id_semester', $idSemester))
                 ->where('user_id', $userId)
                 ->where('metode', $method)
                 ->delete();
@@ -45,7 +46,7 @@ class FinalisCalculatorService
 
                 $candidateIds = collect($tingkatCandidates)->pluck('id_siswa')->unique()->values()->all();
                 $sourceRanks = collect($tingkatCandidates)->pluck('source_rank', 'id_siswa');
-                $finalResults = $this->runCalculator($idTa, $method, $candidateIds);
+                $finalResults = $this->runCalculator($idTa, $method, $candidateIds, $idSemester);
                 $topResults = array_slice($finalResults, 0, 10);
                 $savedResults[$tingkat] = $topResults;
 
@@ -53,6 +54,7 @@ class FinalisCalculatorService
                     HasilFinalis::create([
                         'id_siswa' => $result['id_siswa'],
                         'id_ta' => $idTa,
+                        'id_semester' => $idSemester,
                         'user_id' => $userId,
                         'metode' => $method,
                         'tingkat' => $tingkat,
@@ -72,7 +74,7 @@ class FinalisCalculatorService
         ];
     }
 
-    public function getReadiness(int $idTa): array
+    public function getReadiness(int $idTa, ?int $idSemester = null): array
     {
         $kriteriaCount = Kriteria::count();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
@@ -91,7 +93,7 @@ class FinalisCalculatorService
                 continue;
             }
 
-            $completeStudentCount = $this->getCompleteStudentIds($idTa, $kelas->id_kelas, $kriteriaCount)->count();
+            $completeStudentCount = $this->getCompleteStudentIds($idTa, $kelas->id_kelas, $kriteriaCount, $idSemester)->count();
 
             if ($completeStudentCount >= 1) {
                 $eligible++;
@@ -115,7 +117,7 @@ class FinalisCalculatorService
         ];
     }
 
-    protected function getClassCandidatesByTingkat(int $idTa, string $method): array
+    protected function getClassCandidatesByTingkat(int $idTa, string $method, ?int $idSemester = null): array
     {
         $kriteriaCount = Kriteria::count();
         $candidatesByTingkat = ['X' => [], 'XI' => [], 'XII' => []];
@@ -132,7 +134,7 @@ class FinalisCalculatorService
                 continue;
             }
 
-            $siswaIds = $this->getCompleteStudentIds($idTa, $kelas->id_kelas, $kriteriaCount)->all();
+            $siswaIds = $this->getCompleteStudentIds($idTa, $kelas->id_kelas, $kriteriaCount, $idSemester)->all();
 
             if (count($siswaIds) < 1) {
                 $skipped[] = [
@@ -143,7 +145,7 @@ class FinalisCalculatorService
                 continue;
             }
 
-            $classResults = $this->runCalculator($idTa, $method, $siswaIds);
+            $classResults = $this->runCalculator($idTa, $method, $siswaIds, $idSemester);
             if (empty($classResults)) {
                 continue;
             }
@@ -165,21 +167,22 @@ class FinalisCalculatorService
         ];
     }
 
-    protected function getCompleteStudentIds(int $idTa, $kelasId, int $kriteriaCount)
+    protected function getCompleteStudentIds(int $idTa, $kelasId, int $kriteriaCount, ?int $idSemester = null)
     {
         return Penilaian::select('id_siswa')
             ->where('id_ta', $idTa)
+            ->when($idSemester, fn($query, $idSemester) => $query->where('id_semester', $idSemester))
             ->whereHas('siswa', fn($query) => $query->where('id_kelas', $kelasId))
             ->groupBy('id_siswa')
             ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
             ->pluck('id_siswa');
     }
 
-    protected function runCalculator(int $idTa, string $method, array $siswaIds): array
+    protected function runCalculator(int $idTa, string $method, array $siswaIds, ?int $idSemester = null): array
     {
         return $method === 'smart'
-            ? $this->smartCalculator->calculate($idTa, $siswaIds)
-            : $this->mooraCalculator->calculate($idTa, $siswaIds);
+            ? $this->smartCalculator->calculate($idTa, $siswaIds, $idSemester)
+            : $this->mooraCalculator->calculate($idTa, $siswaIds, $idSemester);
     }
 
     protected function validateMethod(string $method): void

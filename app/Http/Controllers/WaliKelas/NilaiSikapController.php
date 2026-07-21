@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NilaiSikap;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,15 +24,17 @@ class NilaiSikapController extends Controller
     {
         $kelas = $this->getKelas();
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
         $predikatList = ['Sangat Baik', 'Baik', 'Cukup', 'Kurang'];
 
         $siswaList = collect();
 
-        if ($filterTA) {
-            $siswaList = Siswa::with(['nilaiSikap' => function ($q) use ($filterTA) {
-                $q->where('id_ta', $filterTA);
+        if ($filterTA && $filterSemester) {
+            $siswaList = Siswa::with(['nilaiSikap' => function ($q) use ($filterTA, $filterSemester) {
+                $q->where('id_ta', $filterTA)->where('id_semester', $filterSemester);
             }])
                 ->where('id_kelas', $kelas->id_kelas)
                 ->where('id_ta', $filterTA)
@@ -40,7 +43,7 @@ class NilaiSikapController extends Controller
         }
 
         return view('walikelas.nilaisikap.index', compact(
-            'siswaList', 'tahunAjaranList', 'predikatList', 'filterTA', 'kelas'
+            'siswaList', 'tahunAjaranList', 'semesterList', 'predikatList', 'filterTA', 'filterSemester', 'kelas'
         ));
     }
 
@@ -50,6 +53,7 @@ class NilaiSikapController extends Controller
 
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'sikap' => 'required|array',
         ]);
 
@@ -64,6 +68,7 @@ class NilaiSikapController extends Controller
                         [
                             'id_siswa' => $id_siswa,
                             'id_ta' => $validated['id_ta'],
+                            'id_semester' => $validated['id_semester'],
                         ],
                         [
                             'sikap_spiritual' => $values['spiritual'],

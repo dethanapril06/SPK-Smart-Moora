@@ -13,6 +13,7 @@ class RiwayatPelanggaran extends Model
         'id_siswa',
         'id_jenis_pelanggaran',
         'id_ta',
+        'id_semester',
         'tanggal_kejadian',
         'keterangan_tambahan',
     ];
@@ -37,5 +38,11 @@ class RiwayatPelanggaran extends Model
     public function tahunAjaran()
     {
         return $this->belongsTo(TahunAjaran::class, 'id_ta');
+    }
+
+    // Relasi dengan Semester
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'id_semester');
     }
 }

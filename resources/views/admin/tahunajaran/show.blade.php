@@ -28,10 +28,14 @@
                             <tr>
                                 <td class="fw-semibold">Semester</td>
                                 <td>:
-                                    <span
-                                        class="badge bg-label-{{ $tahunajaran->semester == 'Ganjil' ? 'primary' : 'info' }}">
-                                        {{ $tahunajaran->semester }}
-                                    </span>
+                                    @forelse ($tahunajaran->semesters as $semester)
+                                        <span
+                                            class="badge bg-label-{{ $semester->nama_semester == 'Ganjil' ? 'primary' : 'info' }} me-1">
+                                            {{ $semester->nama_semester }}{{ $semester->is_active ? ' (Aktif)' : '' }}
+                                        </span>
+                                    @empty
+                                        <span class="badge bg-label-secondary">Belum Ada Semester</span>
+                                    @endforelse
                                 </td>
                             </tr>
                             <tr>
@@ -78,6 +82,20 @@
                                         </button>
                                     </form>
                                 @endif
+                                @foreach ($tahunajaran->semesters as $semester)
+                                    @if (!$semester->is_active)
+                                        <form
+                                            action="{{ route('admin.tahunajaran.set-active-semester', [$tahunajaran->id_ta, $semester->id_semester]) }}"
+                                            method="POST" class="d-inline">
+                                            @csrf
+                                            @method('PUT')
+                                            <button type="submit" class="btn btn-outline-info me-2">
+                                                <i class="bx bx-time-five me-1"></i> Aktifkan
+                                                {{ $semester->nama_semester }}
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endforeach
                                 <a href="{{ route('admin.tahunajaran.edit', $tahunajaran->id_ta) }}"
                                     class="btn btn-primary">
                                     <i class="bx bx-edit me-1"></i> Edit

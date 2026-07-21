@@ -32,27 +32,7 @@
                         @error('tahun_ajaran')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
-                        <div class="form-text">Format: YYYY/YYYY (contoh: 2024/2025)</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label" for="semester">Semester <span class="text-danger">*</span></label>
-                        <div class="input-group input-group-merge">
-                            <span class="input-group-text"><i class="bx bx-book-open"></i></span>
-                            <select id="semester" name="semester"
-                                class="form-select @error('semester') is-invalid @enderror">
-                                <option value="">Pilih Semester</option>
-                                <option value="Ganjil"
-                                    {{ old('semester', $tahunajaran->semester) == 'Ganjil' ? 'selected' : '' }}>Ganjil
-                                </option>
-                                <option value="Genap"
-                                    {{ old('semester', $tahunajaran->semester) == 'Genap' ? 'selected' : '' }}>Genap
-                                </option>
-                            </select>
-                        </div>
-                        @error('semester')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                        @enderror
+                        <div class="form-text">Semester terkait akan dikelola otomatis.</div>
                     </div>
 
                     <div class="mb-3">

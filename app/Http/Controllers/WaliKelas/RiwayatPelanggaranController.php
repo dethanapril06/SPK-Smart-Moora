@@ -7,6 +7,7 @@ use App\Models\RiwayatPelanggaran;
 use App\Models\Siswa;
 use App\Models\JenisPelanggaran;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
 
@@ -32,11 +33,12 @@ class RiwayatPelanggaranController extends Controller
 
         $search = $request->get('search');
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
         $filterKategori = $request->get('kategori');
         $filterTanggalMulai = $request->get('tanggal_mulai');
         $filterTanggalSelesai = $request->get('tanggal_selesai');
 
-        $riwayat = RiwayatPelanggaran::with(['siswa.kelas', 'jenisPelanggaran', 'tahunAjaran'])
+        $riwayat = RiwayatPelanggaran::with(['siswa.kelas', 'jenisPelanggaran', 'tahunAjaran', 'semester'])
             ->whereIn('id_siswa', $siswaIds)
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
@@ -51,6 +53,9 @@ class RiwayatPelanggaranController extends Controller
             })
             ->when($filterTA, function ($query, $filterTA) {
                 return $query->where('id_ta', $filterTA);
+            })
+            ->when($filterSemester, function ($query, $filterSemester) {
+                return $query->where('id_semester', $filterSemester);
             })
             ->when($filterKategori, function ($query, $filterKategori) {
                 return $query->whereHas('jenisPelanggaran', function ($q) use ($filterKategori) {
@@ -68,21 +73,23 @@ class RiwayatPelanggaranController extends Controller
             ->appends([
                 'search' => $search,
                 'tahun_ajaran' => $filterTA,
+                'semester' => $filterSemester,
                 'kategori' => $filterKategori,
                 'tanggal_mulai' => $filterTanggalMulai,
                 'tanggal_selesai' => $filterTanggalSelesai
             ]);
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
         $kategoriList = [
             'Keterlambatan', 'Kehadiran', 'Pakaian', 'Kelakuan',
             'Ketertiban', 'Kerajinan', 'Narkoba_Miras', 'Tata_Tertib_Ujian'
         ];
 
         return view('walikelas.riwayatpelanggaran.index', compact(
-            'riwayat', 'search', 'filterTA', 'filterKategori',
+            'riwayat', 'search', 'filterTA', 'filterSemester', 'filterKategori',
             'filterTanggalMulai', 'filterTanggalSelesai',
-            'tahunAjaranList', 'kategoriList', 'kelas'
+            'tahunAjaranList', 'semesterList', 'kategoriList', 'kelas'
         ));
     }
 
@@ -93,7 +100,8 @@ class RiwayatPelanggaranController extends Controller
             ->where('id_kelas', $kelas->id_kelas)
             ->orderBy('nama_siswa')
             ->get();
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
         $kategoriList = [
             'Keterlambatan', 'Kehadiran', 'Pakaian', 'Kelakuan',
@@ -101,7 +109,7 @@ class RiwayatPelanggaranController extends Controller
         ];
 
         return view('walikelas.riwayatpelanggaran.create', compact(
-            'siswaList', 'tahunAjaranList', 'tahunAjaranAktif', 'kategoriList'
+            'siswaList', 'tahunAjaranList', 'semesterList', 'tahunAjaranAktif', 'kategoriList'
         ));
     }
 
@@ -113,12 +121,14 @@ class RiwayatPelanggaranController extends Controller
             'id_siswa' => 'required|exists:tb_siswa,id_siswa',
             'id_jenis_pelanggaran' => 'required|exists:tb_jenis_pelanggaran,id_jenis_pelanggaran',
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'tanggal_kejadian' => 'required|date',
             'keterangan_tambahan' => 'nullable|string'
         ], [
             'id_siswa.required' => 'Siswa wajib dipilih.',
             'id_jenis_pelanggaran.required' => 'Jenis pelanggaran wajib dipilih.',
             'id_ta.required' => 'Tahun ajaran wajib dipilih.',
+            'id_semester.required' => 'Semester wajib dipilih.',
             'tanggal_kejadian.required' => 'Tanggal kejadian wajib diisi.',
         ]);
 
@@ -137,11 +147,12 @@ class RiwayatPelanggaranController extends Controller
         $kelas = $this->getKelas();
         abort_if($riwayatpelanggaran->siswa->id_kelas !== $kelas->id_kelas, 403, 'Data bukan milik kelas Anda.');
 
-        $riwayatpelanggaran->load(['siswa.kelas', 'jenisPelanggaran', 'tahunAjaran']);
+        $riwayatpelanggaran->load(['siswa.kelas', 'jenisPelanggaran', 'tahunAjaran', 'semester']);
 
         $riwayatSiswa = RiwayatPelanggaran::with('jenisPelanggaran')
             ->where('id_siswa', $riwayatpelanggaran->id_siswa)
             ->where('id_ta', $riwayatpelanggaran->id_ta)
+            ->where('id_semester', $riwayatpelanggaran->id_semester)
             ->orderBy('tanggal_kejadian', 'desc')
             ->get();
 
@@ -162,14 +173,15 @@ class RiwayatPelanggaranController extends Controller
             ->where('id_kelas', $kelas->id_kelas)
             ->orderBy('nama_siswa')
             ->get();
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
         $kategoriList = [
             'Keterlambatan', 'Kehadiran', 'Pakaian', 'Kelakuan',
             'Ketertiban', 'Kerajinan', 'Narkoba_Miras', 'Tata_Tertib_Ujian'
         ];
 
         return view('walikelas.riwayatpelanggaran.edit', compact(
-            'riwayatpelanggaran', 'siswaList', 'tahunAjaranList', 'kategoriList'
+            'riwayatpelanggaran', 'siswaList', 'tahunAjaranList', 'semesterList', 'kategoriList'
         ));
     }
 
@@ -182,6 +194,7 @@ class RiwayatPelanggaranController extends Controller
             'id_siswa' => 'required|exists:tb_siswa,id_siswa',
             'id_jenis_pelanggaran' => 'required|exists:tb_jenis_pelanggaran,id_jenis_pelanggaran',
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'tanggal_kejadian' => 'required|date',
             'keterangan_tambahan' => 'nullable|string'
         ]);

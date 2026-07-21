@@ -16,7 +16,7 @@
                     Langkah Perhitungan Metode MOORA
                     <small class="text-muted">- {{ $tahunAjaran->tahun_ajaran }} {{ $tahunAjaran->semester }}</small>
                 </h5>
-                <a href="{{ route('walikelas.perhitungan.moora.index', ['tahun_ajaran' => $tahunAjaran->id_ta]) }}"
+                <a href="{{ route('walikelas.perhitungan.moora.index', ['tahun_ajaran' => $tahunAjaran->id_ta, 'semester' => $id_semester]) }}"
                     class="btn btn-sm btn-secondary">
                     <i class="bx bx-arrow-back"></i> Kembali
                 </a>

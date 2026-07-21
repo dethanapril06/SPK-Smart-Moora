@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\HasilAkhir;
 use App\Models\HasilFinalis;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\Kelas;
 use App\Models\Kriteria;
 use App\Models\Penilaian;
@@ -62,6 +63,7 @@ class PerhitunganController extends Controller
     public function indexSmart(Request $request)
     {
         $filterTA         = $request->get('tahun_ajaran');
+        $filterSemester   = $request->get('semester');
         $filterKelas      = $this->resolveKelasSelection($request->input('kelas', []));
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
         $allKelasSelected = !empty($filterKelas) && count($filterKelas) === Kelas::count();
@@ -74,10 +76,12 @@ class PerhitunganController extends Controller
             ->where('user_id', auth()->id())
             ->whereNotNull('skor_smart')
             ->when($filterTA, fn($q) => $q->where('id_ta', $filterTA))
+            ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($q2) => $q2->whereIn('id_kelas', $filterKelas)));
 
         $hasilList       = $hasilQuery->orderBy('rank_smart')->paginate(10)->withQueryString();
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList    = Semester::orderBy('id_semester')->get();
         $kelasList       = Kelas::orderBy('nama_kelas')->get();
         $hasCalculation  = $filterTA && $hasilList->total() > 0;
 
@@ -86,6 +90,7 @@ class PerhitunganController extends Controller
             $kriteriaCount = Kriteria::count();
             $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
                 ->where('id_ta', $filterTA)
+                ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                 ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($q2) => $q2->whereIn('id_kelas', $filterKelas)))
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
@@ -93,8 +98,8 @@ class PerhitunganController extends Controller
         }
 
         return view('admin.perhitungan.smart.index', compact(
-            'hasilList', 'tahunAjaranList', 'kelasList',
-            'filterTA', 'filterKelas', 'allKelasSelected',
+            'hasilList', 'tahunAjaranList', 'semesterList', 'kelasList',
+            'filterTA', 'filterSemester', 'filterKelas', 'allKelasSelected',
             'hasCalculation', 'studentsWithCompletePenilaian'
         ));
     }
@@ -105,6 +110,7 @@ class PerhitunganController extends Controller
 
         $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'kelas' => 'required|array|min:1',
         ]);
 
@@ -117,13 +123,15 @@ class PerhitunganController extends Controller
             return redirect()->back()->with('error', 'Terdapat kelas yang tidak valid.');
         }
 
-        $id_ta    = $request->input('id_ta');
-        $kelasIds = array_values(array_unique($kelasIds));
+        $id_ta       = $request->input('id_ta');
+        $id_semester = $request->input('id_semester');
+        $kelasIds    = array_values(array_unique($kelasIds));
         $kriteriaCount = Kriteria::count();
         $allSelectedSiswaIds = Siswa::whereIn('id_kelas', $kelasIds)->pluck('id_siswa')->all();
 
         $siswaQuery = Penilaian::select('id_siswa')
             ->where('id_ta', $id_ta)
+            ->where('id_semester', $id_semester)
             ->whereHas('siswa', fn($q) => $q->whereIn('id_kelas', $kelasIds))
             ->groupBy('id_siswa')
             ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount]);
@@ -137,10 +145,11 @@ class PerhitunganController extends Controller
 
         DB::beginTransaction();
         try {
-            $smartResults = $this->smartCalculator->calculate($id_ta, $siswaIds);
+            $smartResults = $this->smartCalculator->calculate($id_ta, $siswaIds, $id_semester);
             $userId = auth()->id();
 
             HasilAkhir::where('id_ta', $id_ta)
+                ->where('id_semester', $id_semester)
                 ->where('user_id', $userId)
                 ->whereIn('id_siswa', $allSelectedSiswaIds)
                 ->update([
@@ -153,6 +162,7 @@ class PerhitunganController extends Controller
                     [
                         'id_siswa' => $smart['id_siswa'],
                         'id_ta' => $id_ta,
+                        'id_semester' => $id_semester,
                         'user_id' => $userId,
                     ],
                     [
@@ -164,7 +174,7 @@ class PerhitunganController extends Controller
 
             DB::commit();
             return redirect()->route('admin.perhitungan.smart.index', [
-                'tahun_ajaran' => $id_ta, 'kelas' => $kelasIds,
+                'tahun_ajaran' => $id_ta, 'semester' => $id_semester, 'kelas' => $kelasIds,
             ])->with('success', "Perhitungan SMART berhasil! {$totalSiswa} siswa dari " . count($kelasIds) . " kelas telah di-ranking.");
         } catch (\Exception $e) {
             DB::rollBack();
@@ -175,6 +185,7 @@ class PerhitunganController extends Controller
     public function showStepsSmart(Request $request, $id_ta)
     {
         $selectedKelasIds = $this->resolveKelasSelection($request->input('kelas', []));
+        $id_semester      = $request->get('semester');
         $tahunAjaran      = TahunAjaran::findOrFail($id_ta);
         $kriteriaList     = Kriteria::orderBy('kode_kriteria')->get();
 
@@ -183,13 +194,14 @@ class PerhitunganController extends Controller
             $kriteriaCount = Kriteria::count();
             $siswaIds = Penilaian::select('id_siswa')
                 ->where('id_ta', $id_ta)
+                ->when($id_semester, fn($q, $s) => $q->where('id_semester', $s))
                 ->whereHas('siswa', fn($q) => $q->whereIn('id_kelas', $selectedKelasIds))
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
                 ->pluck('id_siswa')->all();
         }
 
-        $this->smartCalculator->calculate($id_ta, $siswaIds);
+        $this->smartCalculator->calculate($id_ta, $siswaIds, $id_semester);
         $detailedSteps   = $this->smartCalculator->getDetailedSteps();
         $perPage         = 10;
         $stepsCollection = collect($detailedSteps)->values();
@@ -210,7 +222,7 @@ class PerhitunganController extends Controller
 
         return view('admin.perhitungan.smart.steps', compact(
             'tahunAjaran', 'kriteriaList',
-            'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'selectedKelasIds'
+            'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'selectedKelasIds', 'id_semester'
         ));
     }
 
@@ -221,6 +233,7 @@ class PerhitunganController extends Controller
     public function indexMoora(Request $request)
     {
         $filterTA         = $request->get('tahun_ajaran');
+        $filterSemester   = $request->get('semester');
         $filterKelas      = $this->resolveKelasSelection($request->input('kelas', []));
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
         $allKelasSelected = !empty($filterKelas) && count($filterKelas) === Kelas::count();
@@ -233,10 +246,12 @@ class PerhitunganController extends Controller
             ->where('user_id', auth()->id())
             ->whereNotNull('skor_moora')
             ->when($filterTA, fn($q) => $q->where('id_ta', $filterTA))
+            ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($q2) => $q2->whereIn('id_kelas', $filterKelas)));
 
         $hasilList       = $hasilQuery->orderBy('rank_moora')->paginate(10)->withQueryString();
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList    = Semester::orderBy('id_semester')->get();
         $kelasList       = Kelas::orderBy('nama_kelas')->get();
         $hasCalculation  = $filterTA && $hasilList->total() > 0;
 
@@ -245,6 +260,7 @@ class PerhitunganController extends Controller
             $kriteriaCount = Kriteria::count();
             $studentsWithCompletePenilaian = Penilaian::select('id_siswa')
                 ->where('id_ta', $filterTA)
+                ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                 ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($q2) => $q2->whereIn('id_kelas', $filterKelas)))
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
@@ -252,8 +268,8 @@ class PerhitunganController extends Controller
         }
 
         return view('admin.perhitungan.moora.index', compact(
-            'hasilList', 'tahunAjaranList', 'kelasList',
-            'filterTA', 'filterKelas', 'allKelasSelected',
+            'hasilList', 'tahunAjaranList', 'semesterList', 'kelasList',
+            'filterTA', 'filterSemester', 'filterKelas', 'allKelasSelected',
             'hasCalculation', 'studentsWithCompletePenilaian'
         ));
     }
@@ -264,6 +280,7 @@ class PerhitunganController extends Controller
 
         $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'kelas' => 'required|array|min:1',
         ]);
 
@@ -276,13 +293,15 @@ class PerhitunganController extends Controller
             return redirect()->back()->with('error', 'Terdapat kelas yang tidak valid.');
         }
 
-        $id_ta    = $request->input('id_ta');
-        $kelasIds = array_values(array_unique($kelasIds));
+        $id_ta       = $request->input('id_ta');
+        $id_semester = $request->input('id_semester');
+        $kelasIds    = array_values(array_unique($kelasIds));
         $kriteriaCount = Kriteria::count();
         $allSelectedSiswaIds = Siswa::whereIn('id_kelas', $kelasIds)->pluck('id_siswa')->all();
 
         $siswaQuery = Penilaian::select('id_siswa')
             ->where('id_ta', $id_ta)
+            ->where('id_semester', $id_semester)
             ->whereHas('siswa', fn($q) => $q->whereIn('id_kelas', $kelasIds))
             ->groupBy('id_siswa')
             ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount]);
@@ -296,10 +315,11 @@ class PerhitunganController extends Controller
 
         DB::beginTransaction();
         try {
-            $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds);
+            $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds, $id_semester);
             $userId = auth()->id();
 
             HasilAkhir::where('id_ta', $id_ta)
+                ->where('id_semester', $id_semester)
                 ->where('user_id', $userId)
                 ->whereIn('id_siswa', $allSelectedSiswaIds)
                 ->update([
@@ -312,6 +332,7 @@ class PerhitunganController extends Controller
                     [
                         'id_siswa' => $moora['id_siswa'],
                         'id_ta' => $id_ta,
+                        'id_semester' => $id_semester,
                         'user_id' => $userId,
                     ],
                     [
@@ -323,7 +344,7 @@ class PerhitunganController extends Controller
 
             DB::commit();
             return redirect()->route('admin.perhitungan.moora.index', [
-                'tahun_ajaran' => $id_ta, 'kelas' => $kelasIds,
+                'tahun_ajaran' => $id_ta, 'semester' => $id_semester, 'kelas' => $kelasIds,
             ])->with('success', "Perhitungan MOORA berhasil! {$totalSiswa} siswa dari " . count($kelasIds) . " kelas telah di-ranking.");
         } catch (\Exception $e) {
             DB::rollBack();
@@ -334,6 +355,7 @@ class PerhitunganController extends Controller
     public function showStepsMoora(Request $request, $id_ta)
     {
         $selectedKelasIds = $this->resolveKelasSelection($request->input('kelas', []));
+        $id_semester      = $request->get('semester');
         $tahunAjaran      = TahunAjaran::findOrFail($id_ta);
         $kriteriaList     = Kriteria::orderBy('kode_kriteria')->get();
 
@@ -342,13 +364,14 @@ class PerhitunganController extends Controller
             $kriteriaCount = Kriteria::count();
             $siswaIds = Penilaian::select('id_siswa')
                 ->where('id_ta', $id_ta)
+                ->when($id_semester, fn($q, $s) => $q->where('id_semester', $s))
                 ->whereHas('siswa', fn($q) => $q->whereIn('id_kelas', $selectedKelasIds))
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
                 ->pluck('id_siswa')->all();
         }
 
-        $this->mooraCalculator->calculate($id_ta, $siswaIds);
+        $this->mooraCalculator->calculate($id_ta, $siswaIds, $id_semester);
         $detailedSteps   = $this->mooraCalculator->getDetailedSteps();
         $perPage         = 10;
         $stepsCollection = collect($detailedSteps)->values();
@@ -369,7 +392,7 @@ class PerhitunganController extends Controller
 
         return view('admin.perhitungan.moora.steps', compact(
             'tahunAjaran', 'kriteriaList',
-            'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'selectedKelasIds'
+            'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'selectedKelasIds', 'id_semester'
         ));
     }
 
@@ -400,6 +423,7 @@ class PerhitunganController extends Controller
     protected function indexFinalis(Request $request, string $method)
     {
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
 
         if (!$filterTA && $tahunAjaranAktif) {
@@ -410,15 +434,17 @@ class PerhitunganController extends Controller
             ->where('user_id', auth()->id())
             ->where('metode', $method)
             ->when($filterTA, fn($query) => $query->where('id_ta', $filterTA))
+            ->when($filterSemester, fn($query, $s) => $query->where('id_semester', $s))
             ->orderByRaw("FIELD(tingkat, 'X', 'XI', 'XII')")
             ->orderBy('rank')
             ->get()
             ->groupBy('tingkat');
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
-        $hasCalculation = $filterTA && $hasilByTingkat->flatten(1)->count() > 0;
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList    = Semester::orderBy('id_semester')->get();
+        $hasCalculation  = $filterTA && $hasilByTingkat->flatten(1)->count() > 0;
         $readiness = $filterTA
-            ? $this->finalisCalculator->getReadiness((int) $filterTA)
+            ? $this->finalisCalculator->getReadiness((int) $filterTA, $filterSemester ? (int)$filterSemester : null)
             : [
                 'total_classes' => 0,
                 'eligible_classes' => 0,
@@ -430,7 +456,9 @@ class PerhitunganController extends Controller
         return view('admin.perhitungan.finalis.index', compact(
             'hasilByTingkat',
             'tahunAjaranList',
+            'semesterList',
             'filterTA',
+            'filterSemester',
             'hasCalculation',
             'readiness',
             'method'
@@ -441,17 +469,19 @@ class PerhitunganController extends Controller
     {
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
         ]);
 
         try {
             $summary = $this->finalisCalculator->calculate(
                 (int) $validated['id_ta'],
                 $method,
-                auth()->id()
+                auth()->id(),
+                (int) $validated['id_semester']
             );
 
             return redirect()
-                ->route("admin.perhitungan.finalis.{$method}.index", ['tahun_ajaran' => $validated['id_ta']])
+                ->route("admin.perhitungan.finalis.{$method}.index", ['tahun_ajaran' => $validated['id_ta'], 'semester' => $validated['id_semester']])
                 ->with('success', 'Perhitungan 10 Besar ' . strtoupper($method) . " berhasil! {$summary['candidate_count']} kandidat dari 3 besar tiap kelas telah dihitung ulang.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghitung 10 Besar ' . strtoupper($method) . ': ' . $e->getMessage());

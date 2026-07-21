@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Semester;
 use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 
@@ -14,11 +15,21 @@ class TahunAjaranController extends Controller
     public function index(Request $request)
     {
         $search = $request->get('search');
-        
+        $representativeIds = TahunAjaran::query()
+            ->selectRaw('MIN(id_ta) as id_ta')
+            ->groupBy('tahun_ajaran')
+            ->pluck('id_ta');
+
         $tahunAjaran = TahunAjaran::query()
+            ->with(['semesters', 'activeSemester'])
+            ->whereIn('id_ta', $representativeIds)
             ->when($search, function ($query, $search) {
-                return $query->where('tahun_ajaran', 'like', "%{$search}%")
-                    ->orWhere('semester', 'like', "%{$search}%");
+                return $query->where(function ($q) use ($search) {
+                    $q->where('tahun_ajaran', 'like', "%{$search}%")
+                        ->orWhereHas('semesters', function ($semesterQuery) use ($search) {
+                            $semesterQuery->where('nama_semester', 'like', "%{$search}%");
+                        });
+                });
             })
             ->orderBy('is_active', 'desc')
             ->orderBy('tahun_ajaran', 'desc')
@@ -43,23 +54,27 @@ class TahunAjaranController extends Controller
     {
         $validated = $request->validate([
             'tahun_ajaran' => 'required|string|max:20|unique:tb_tahun_ajaran,tahun_ajaran',
-            'semester' => 'required|in:Ganjil,Genap',
             'is_active' => 'nullable|boolean'
         ], [
             'tahun_ajaran.required' => 'Tahun ajaran wajib diisi.',
             'tahun_ajaran.unique' => 'Tahun ajaran sudah ada.',
-            'semester.required' => 'Semester wajib dipilih.',
-            'semester.in' => 'Semester harus Ganjil atau Genap.'
         ]);
 
         // If is_active is set to true, deactivate other tahun ajaran
         if ($request->boolean('is_active')) {
             TahunAjaran::query()->update(['is_active' => false]);
+            Semester::query()->update(['is_active' => false]);
         }
 
         $validated['is_active'] = $request->boolean('is_active');
 
-        TahunAjaran::create($validated);
+        $tahunajaran = TahunAjaran::create([
+            'tahun_ajaran' => $validated['tahun_ajaran'],
+            'semester' => 'Ganjil',
+            'is_active' => $validated['is_active'],
+        ]);
+
+        $tahunajaran->ensureDefaultSemesters($tahunajaran->is_active);
 
         return redirect()->route('admin.tahunajaran.index')
             ->with('success', 'Tahun ajaran berhasil ditambahkan.');
@@ -70,7 +85,7 @@ class TahunAjaranController extends Controller
      */
     public function show(TahunAjaran $tahunajaran)
     {
-        $tahunajaran->load('siswa', 'penilaian');
+        $tahunajaran->load('siswa', 'penilaian', 'semesters', 'activeSemester');
         return view('admin.tahunajaran.show', compact('tahunajaran'));
     }
 
@@ -89,23 +104,27 @@ class TahunAjaranController extends Controller
     {
         $validated = $request->validate([
             'tahun_ajaran' => 'required|string|max:20|unique:tb_tahun_ajaran,tahun_ajaran,' . $tahunajaran->id_ta . ',id_ta',
-            'semester' => 'required|in:Ganjil,Genap',
             'is_active' => 'nullable|boolean'
         ], [
             'tahun_ajaran.required' => 'Tahun ajaran wajib diisi.',
             'tahun_ajaran.unique' => 'Tahun ajaran sudah ada.',
-            'semester.required' => 'Semester wajib dipilih.',
-            'semester.in' => 'Semester harus Ganjil atau Genap.'
         ]);
 
         // If is_active is set to true, deactivate other tahun ajaran
         if ($request->boolean('is_active')) {
             TahunAjaran::where('id_ta', '!=', $tahunajaran->id_ta)->update(['is_active' => false]);
+            Semester::query()->update(['is_active' => false]);
         }
 
         $validated['is_active'] = $request->boolean('is_active');
 
-        $tahunajaran->update($validated);
+        $tahunajaran->update([
+            'tahun_ajaran' => $validated['tahun_ajaran'],
+            'semester' => 'Ganjil',
+            'is_active' => $validated['is_active'],
+        ]);
+
+        $tahunajaran->ensureDefaultSemesters($tahunajaran->is_active);
 
         return redirect()->route('admin.tahunajaran.index')
             ->with('success', 'Tahun ajaran berhasil diperbarui.');
@@ -129,11 +148,27 @@ class TahunAjaranController extends Controller
     {
         // Deactivate all tahun ajaran
         TahunAjaran::query()->update(['is_active' => false]);
+        Semester::query()->update(['is_active' => false]);
         
         // Activate this tahun ajaran
         $tahunajaran->update(['is_active' => true]);
+        $tahunajaran->ensureDefaultSemesters(true);
 
         return redirect()->route('admin.tahunajaran.index')
             ->with('success', 'Tahun ajaran berhasil diaktifkan.');
+    }
+
+    public function setActiveSemester(TahunAjaran $tahunajaran, Semester $semester)
+    {
+        abort_if($semester->id_ta !== $tahunajaran->id_ta, 404);
+
+        TahunAjaran::query()->update(['is_active' => false]);
+        Semester::query()->update(['is_active' => false]);
+
+        $tahunajaran->update(['is_active' => true]);
+        $semester->update(['is_active' => true]);
+
+        return redirect()->route('admin.tahunajaran.show', $tahunajaran->id_ta)
+            ->with('success', "Semester {$semester->nama_semester} pada tahun ajaran {$tahunajaran->tahun_ajaran} berhasil diaktifkan.");
     }
 }

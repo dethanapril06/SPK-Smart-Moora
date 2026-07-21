@@ -109,7 +109,7 @@
         <table>
             <tr>
                 <td>Tahun Ajaran</td>
-                <td>: {{ $tahunAjaran->tahun_ajaran }} — {{ $tahunAjaran->semester }}</td>
+                <td>: {{ $tahunAjaran->tahun_ajaran }} — {{ !empty($semester) ? $semester->nama_semester : $tahunAjaran->semester }}</td>
             </tr>
             <tr>
                 <td>Sumber Perhitungan</td>

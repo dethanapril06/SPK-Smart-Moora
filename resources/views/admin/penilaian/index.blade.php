@@ -20,7 +20,7 @@
             <i class="bx bx-info-circle me-2 mt-1"></i>
             <div>
                 Jika hasil penilaian belum sesuai, silakan lakukan <strong>Agregasi dari Rapor</strong> ulang agar nilai
-                C1-C6 diperbarui berdasarkan data terbaru.
+                C1-C7 diperbarui berdasarkan data terbaru.
             </div>
         </div>
 
@@ -44,23 +44,34 @@
             <div class="card-body">
                 <form action="{{ route('admin.penilaian.index') }}" method="GET">
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label" for="search">Cari Siswa</label>
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="NISN atau nama siswa..." value="{{ $search }}">
                         </div>
-                        <div class="col-md-4 mt-3">
+                        <div class="col-md-3">
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran</label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran">
                                 <option value="">Semua Tahun Ajaran</option>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4 mt-3">
+                        <div class="col-md-3">
+                            <label class="form-label" for="semester">Semester</label>
+                            <select class="form-select" id="semester" name="semester">
+                                <option value="">Semua Semester</option>
+                                @foreach ($semesterList as $s)
+                                    <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>
+                                        {{ $s->nama_semester }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label" for="kelas">Kelas</label>
                             <select class="form-select" id="kelas" name="kelas">
                                 <option value="">Semua Kelas</option>
@@ -98,7 +109,7 @@
                             @foreach ($kriteriaList as $kriteria)
                                 <th class="text-center" style="min-width: 80px;">
                                     {{ $kriteria->kode_kriteria }}
-                                    @if ($kriteria->kode_kriteria == 'C5')
+                                    @if ($kriteria->kode_kriteria == 'C6')
                                         <i class="bx bx-bolt text-warning" title="Auto"></i>
                                     @endif
                                 </th>
@@ -111,6 +122,7 @@
                             @php
                                 $penilaianBySiswa = $siswa->penilaian
                                     ->where('id_ta', $filterTA ?: $siswa->id_ta)
+                                    ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                                     ->keyBy('id_kriteria');
                             @endphp
                             <tr>
@@ -142,7 +154,7 @@
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
                                         @if ($penilaianBySiswa->count() > 0)
-                                            <a href="{{ route('admin.penilaian.show', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta]) }}"
+                                            <a href="{{ route('admin.penilaian.show', ['penilaian' => $siswa->id_siswa, 'ta' => $filterTA ?: $siswa->id_ta, 'semester' => $filterSemester]) }}"
                                                 class="btn btn-sm btn-icon btn-label-info" title="Detail">
                                                 <i class="bx bx-show"></i>
                                             </a>
@@ -243,6 +255,7 @@
     <form id="aggregate-form" action="{{ route('admin.penilaian.aggregate') }}" method="POST" class="d-none">
         @csrf
         <input type="hidden" name="id_ta" id="aggregate_id_ta">
+        <input type="hidden" name="id_semester" id="aggregate_id_semester">
     </form>
 
     @push('scripts')
@@ -252,32 +265,56 @@
                 let taOptions = '';
                 @foreach ($tahunAjaranList as $ta)
                     taOptions +=
-                        '<option value="{{ $ta->id_ta }}">{{ $ta->tahun_ajaran }} - Semester {{ $ta->semester }} {{ $ta->is_active ? '(Aktif)' : '' }}</option>';
+                        '<option value="{{ $ta->id_ta }}">{{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}</option>';
+                @endforeach
+
+                let semOptions = '';
+                @foreach ($semesterList as $s)
+                    semOptions +=
+                        '<option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}">{{ $s->nama_semester }}</option>';
                 @endforeach
 
                 Swal.fire({
                     title: 'Agregasi Data Rapor',
                     html: `
-                        <p class="text-muted">Hitung otomatis nilai C1-C6 dari data rapor yang telah diinput (Pengetahuan, Keterampilan, Sikap, Ekskul, Pelanggaran, Absensi).</p>
-                        <select id="swal-ta" class="form-select">
-                            <option value="">-- Pilih Tahun Ajaran --</option>
-                            ${taOptions}
-                        </select>
+                        <p class="text-muted">Hitung otomatis nilai C1-C7 dari data rapor yang telah diinput (Pengetahuan, Keterampilan, Sikap Spiritual sebagai C3, Sikap Sosial sebagai C4, Ekskul, Pelanggaran, Absensi).</p>
+                        <div class="mb-3 text-start">
+                            <label class="form-label">Tahun Ajaran</label>
+                            <select id="swal-ta" class="form-select">
+                                <option value="">-- Pilih Tahun Ajaran --</option>
+                                ${taOptions}
+                            </select>
+                        </div>
+                        <div class="text-start">
+                            <label class="form-label">Semester</label>
+                            <select id="swal-sem" class="form-select">
+                                <option value="">-- Pilih Semester --</option>
+                                ${semOptions}
+                            </select>
+                        </div>
                     `,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: '<i class="bx bx-refresh"></i> Proses Agregasi',
                     cancelButtonText: 'Batal',
-                    preConfirm: () => {
-                        const selected = document.getElementById('swal-ta').value;
-                        if (!selected) {
-                            Swal.showValidationMessage('Pilih tahun ajaran terlebih dahulu');
+                    didOpen: () => {
+                        if (window.initDynamicSemesterDropdown) {
+                            window.initDynamicSemesterDropdown(document.getElementById('swal-ta'), document.getElementById('swal-sem'));
                         }
-                        return selected;
+                    },
+                    preConfirm: () => {
+                        const ta = document.getElementById('swal-ta').value;
+                        const sem = document.getElementById('swal-sem').value;
+                        if (!ta || !sem) {
+                            Swal.showValidationMessage('Pilih tahun ajaran dan semester terlebih dahulu');
+                            return false;
+                        }
+                        return { ta, sem };
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        document.getElementById('aggregate_id_ta').value = result.value;
+                        document.getElementById('aggregate_id_ta').value = result.value.ta;
+                        document.getElementById('aggregate_id_semester').value = result.value.sem;
                         document.getElementById('aggregate-form').submit();
                     }
                 });

@@ -7,6 +7,7 @@ use App\Models\HasilAkhir;
 use App\Models\HasilFinalis;
 use App\Models\Kelas;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -16,9 +17,10 @@ class PerhitunganController extends Controller
 
     public function indexSmart(Request $request)
     {
-        $filterTA        = $request->get('tahun_ajaran');
-        $source          = $request->get('source', 'admin');
-        $filterKelas     = $request->get('kelas');
+        $filterTA         = $request->get('tahun_ajaran');
+        $filterSemester   = $request->get('semester');
+        $source           = $request->get('source', 'admin');
+        $filterKelas      = $request->get('kelas');
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
 
         if (!$filterTA && $tahunAjaranAktif) {
@@ -35,8 +37,9 @@ class PerhitunganController extends Controller
                 if ($adminUser) {
                     $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
                         ->where('id_ta', $filterTA)
+                        ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                         ->where('user_id', $adminUser->id)
-                        ->whereNotNull('rank_smart')   // ← hanya ambil yang ada SMART
+                        ->whereNotNull('rank_smart')
                         ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
                             $sq->where('id_kelas', $filterKelas)
                         ))
@@ -51,8 +54,9 @@ class PerhitunganController extends Controller
                     $kelas = Kelas::where('id_wali_kelas', $waliKelas->id)->first();
                     $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
                         ->where('id_ta', $filterTA)
+                        ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                         ->where('user_id', $waliKelas->id)
-                        ->whereNotNull('rank_smart')   // ← hanya ambil yang ada SMART
+                        ->whereNotNull('rank_smart')
                         ->orderBy('rank_smart')
                         ->paginate(10)
                         ->withQueryString();
@@ -64,13 +68,14 @@ class PerhitunganController extends Controller
             $hasCalculation = $hasilList->total() > 0;
         }
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList    = Semester::orderBy('id_semester')->get();
         $kelasList       = Kelas::orderBy('nama_kelas')->get();
-        $sourceList      = $this->getSourceList($filterTA, 'smart');
+        $sourceList      = $this->getSourceList($filterTA, $filterSemester, 'smart');
 
         return view('kepalasekolah.perhitungan.smart.index', compact(
-            'hasilList', 'tahunAjaranList', 'kelasList',
-            'filterTA', 'filterKelas', 'source', 'sourceName',
+            'hasilList', 'tahunAjaranList', 'semesterList', 'kelasList',
+            'filterTA', 'filterSemester', 'filterKelas', 'source', 'sourceName',
             'hasCalculation', 'sourceList'
         ));
     }
@@ -79,9 +84,10 @@ class PerhitunganController extends Controller
 
     public function indexMoora(Request $request)
     {
-        $filterTA        = $request->get('tahun_ajaran');
-        $source          = $request->get('source', 'admin');
-        $filterKelas     = $request->get('kelas');
+        $filterTA         = $request->get('tahun_ajaran');
+        $filterSemester   = $request->get('semester');
+        $source           = $request->get('source', 'admin');
+        $filterKelas      = $request->get('kelas');
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
 
         if (!$filterTA && $tahunAjaranAktif) {
@@ -98,8 +104,9 @@ class PerhitunganController extends Controller
                 if ($adminUser) {
                     $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
                         ->where('id_ta', $filterTA)
+                        ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                         ->where('user_id', $adminUser->id)
-                        ->whereNotNull('rank_moora')   // ← hanya ambil yang ada MOORA
+                        ->whereNotNull('rank_moora')
                         ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
                             $sq->where('id_kelas', $filterKelas)
                         ))
@@ -114,8 +121,9 @@ class PerhitunganController extends Controller
                     $kelas = Kelas::where('id_wali_kelas', $waliKelas->id)->first();
                     $hasilList = HasilAkhir::with(['siswa.kelas', 'tahunAjaran'])
                         ->where('id_ta', $filterTA)
+                        ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                         ->where('user_id', $waliKelas->id)
-                        ->whereNotNull('rank_moora')   // ← hanya ambil yang ada MOORA
+                        ->whereNotNull('rank_moora')
                         ->orderBy('rank_moora')
                         ->paginate(10)
                         ->withQueryString();
@@ -127,13 +135,14 @@ class PerhitunganController extends Controller
             $hasCalculation = $hasilList->total() > 0;
         }
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList    = Semester::orderBy('id_semester')->get();
         $kelasList       = Kelas::orderBy('nama_kelas')->get();
-        $sourceList      = $this->getSourceList($filterTA, 'moora');
+        $sourceList      = $this->getSourceList($filterTA, $filterSemester, 'moora');
 
         return view('kepalasekolah.perhitungan.moora.index', compact(
-            'hasilList', 'tahunAjaranList', 'kelasList',
-            'filterTA', 'filterKelas', 'source', 'sourceName',
+            'hasilList', 'tahunAjaranList', 'semesterList', 'kelasList',
+            'filterTA', 'filterSemester', 'filterKelas', 'source', 'sourceName',
             'hasCalculation', 'sourceList'
         ));
     }
@@ -153,6 +162,7 @@ class PerhitunganController extends Controller
     protected function indexFinalis(Request $request, string $method)
     {
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
         $adminUser = User::where('level', 'Admin')->first();
 
@@ -165,18 +175,22 @@ class PerhitunganController extends Controller
             ->when(!$adminUser, fn($query) => $query->whereRaw('1 = 0'))
             ->where('metode', $method)
             ->when($filterTA, fn($query) => $query->where('id_ta', $filterTA))
+            ->when($filterSemester, fn($query, $s) => $query->where('id_semester', $s))
             ->orderByRaw("FIELD(tingkat, 'X', 'XI', 'XII')")
             ->orderBy('rank')
             ->get()
             ->groupBy('tingkat');
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList    = Semester::orderBy('id_semester')->get();
         $hasCalculation = $filterTA && $hasilByTingkat->flatten(1)->isNotEmpty();
 
         return view('kepalasekolah.perhitungan.finalis.index', compact(
             'hasilByTingkat',
             'tahunAjaranList',
+            'semesterList',
             'filterTA',
+            'filterSemester',
             'hasCalculation',
             'method'
         ));
@@ -184,12 +198,14 @@ class PerhitunganController extends Controller
 
     public function compare($id_ta, Request $request)
     {
-        $source      = $request->get('source', 'admin');
-        $tahunAjaran = TahunAjaran::findOrFail($id_ta);
-        $userId      = $this->resolveUserId($source);
+        $source         = $request->get('source', 'admin');
+        $filterSemester = $request->get('semester');
+        $tahunAjaran    = TahunAjaran::findOrFail($id_ta);
+        $userId         = $this->resolveUserId($source);
 
         $hasilList = HasilAkhir::with('siswa')
             ->where('id_ta', $id_ta)
+            ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->when($userId, fn($q) => $q->where('user_id', $userId))
             ->get();
 
@@ -199,10 +215,11 @@ class PerhitunganController extends Controller
             ? round(($agreement / $hasilList->count()) * 100, 2)
             : 0;
 
-        $sourceName = $this->resolveSourceName($source);
+        $sourceName   = $this->resolveSourceName($source);
+        $semesterList = Semester::orderBy('id_semester')->get();
 
         return view('kepalasekolah.perhitungan.compare', compact(
-            'tahunAjaran', 'hasilList', 'agreementPercentage', 'source', 'sourceName'
+            'tahunAjaran', 'hasilList', 'agreementPercentage', 'source', 'sourceName', 'semesterList', 'filterSemester'
         ));
     }
 
@@ -210,9 +227,10 @@ class PerhitunganController extends Controller
 
     /**
      * @param string|null $filterTA
+     * @param string|null $filterSemester
      * @param string      $method  'smart' | 'moora'
      */
-    protected function getSourceList($filterTA, string $method = 'smart'): array
+    protected function getSourceList($filterTA, $filterSemester, string $method = 'smart'): array
     {
         $sources  = [];
         $rankCol  = "rank_{$method}";   // rank_smart atau rank_moora
@@ -222,6 +240,7 @@ class PerhitunganController extends Controller
         $adminUser = User::where('level', 'Admin')->first();
         if ($adminUser) {
             $exists = HasilAkhir::where('id_ta', $filterTA)
+                ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                 ->where('user_id', $adminUser->id)
                 ->whereNotNull($rankCol)
                 ->exists();
@@ -232,6 +251,7 @@ class PerhitunganController extends Controller
 
         foreach (User::where('level', 'Wali Kelas')->get() as $wk) {
             $exists = HasilAkhir::where('id_ta', $filterTA)
+                ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
                 ->where('user_id', $wk->id)
                 ->whereNotNull($rankCol)
                 ->exists();

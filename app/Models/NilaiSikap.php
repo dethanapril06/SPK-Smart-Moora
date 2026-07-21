@@ -12,6 +12,7 @@ class NilaiSikap extends Model
     protected $fillable = [
         'id_siswa',
         'id_ta',
+        'id_semester',
         'sikap_spiritual',
         'sikap_sosial',
     ];
@@ -30,14 +31,14 @@ class NilaiSikap extends Model
         };
     }
 
-    /**
-     * Hitung rata-rata nilai sikap (spiritual + sosial)
-     */
-    public function getNilaiRataRataAttribute()
+    public function getNilaiSpiritualAttribute()
     {
-        $spiritual = self::konversiPredikat($this->sikap_spiritual);
-        $sosial = self::konversiPredikat($this->sikap_sosial);
-        return ($spiritual + $sosial) / 2;
+        return self::konversiPredikat($this->sikap_spiritual);
+    }
+
+    public function getNilaiSosialAttribute()
+    {
+        return self::konversiPredikat($this->sikap_sosial);
     }
 
     public function siswa()
@@ -48,5 +49,10 @@ class NilaiSikap extends Model
     public function tahunAjaran()
     {
         return $this->belongsTo(TahunAjaran::class, 'id_ta');
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'id_semester');
     }
 }

@@ -13,6 +13,7 @@ class Penilaian extends Model
         'id_siswa',
         'id_kriteria',
         'id_ta',
+        'id_semester',
         'nilai_asli',
         'nilai_konversi',
     ];
@@ -33,5 +34,11 @@ class Penilaian extends Model
     public function tahunAjaran()
     {
         return $this->belongsTo(TahunAjaran::class, 'id_ta');
+    }
+
+    // Relasi dengan Semester
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'id_semester');
     }
 }

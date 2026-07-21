@@ -16,7 +16,7 @@
 </head>
 <body>
     <h2>LAPORAN FINALIS {{ strtoupper($method) }}</h2>
-    <p>Tahun Ajaran {{ $tahunAjaran->tahun_ajaran }} - {{ $tahunAjaran->semester }}</p>
+    <p>Tahun Ajaran {{ $tahunAjaran->tahun_ajaran }} - {{ !empty($semester) ? $semester->nama_semester : $tahunAjaran->semester }}</p>
 
     <table>
         <thead>

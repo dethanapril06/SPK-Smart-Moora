@@ -104,7 +104,7 @@ class SubKriteriaSeeder extends Seeder
             \DB::table('tb_subkriteria')->insert($subKriteriaC2);
         }
 
-        // Sub Kriteria C3 - Sikap
+        // Sub Kriteria C3 - Sikap Spiritual
         $kriteriaC3 = \DB::table('tb_kriteria')->where('kode_kriteria', 'C3')->first();
         
         if ($kriteriaC3) {
@@ -150,7 +150,7 @@ class SubKriteriaSeeder extends Seeder
             \DB::table('tb_subkriteria')->insert($subKriteriaC3);
         }
 
-        // Sub Kriteria C4 - Ekstrakulikuler
+        // Sub Kriteria C4 - Sikap Sosial
         $kriteriaC4 = \DB::table('tb_kriteria')->where('kode_kriteria', 'C4')->first();
         
         if ($kriteriaC4) {
@@ -158,7 +158,7 @@ class SubKriteriaSeeder extends Seeder
                 [
                     'id_kriteria' => $kriteriaC4->id_kriteria,
                     'nama_subkriteria' => 'Sangat Baik',
-                    'nilai_awal' => 90,
+                    'nilai_awal' => 88,
                     'nilai_akhir' => 100,
                     'bobot_subkriteria' => 4,
                     'created_at' => now(),
@@ -167,8 +167,8 @@ class SubKriteriaSeeder extends Seeder
                 [
                     'id_kriteria' => $kriteriaC4->id_kriteria,
                     'nama_subkriteria' => 'Baik',
-                    'nilai_awal' => 80,
-                    'nilai_akhir' => 89,
+                    'nilai_awal' => 74,
+                    'nilai_akhir' => 87,
                     'bobot_subkriteria' => 3,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -176,8 +176,8 @@ class SubKriteriaSeeder extends Seeder
                 [
                     'id_kriteria' => $kriteriaC4->id_kriteria,
                     'nama_subkriteria' => 'Cukup',
-                    'nilai_awal' => 70,
-                    'nilai_akhir' => 79,
+                    'nilai_awal' => 61,
+                    'nilai_akhir' => 73,
                     'bobot_subkriteria' => 2,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -186,7 +186,7 @@ class SubKriteriaSeeder extends Seeder
                     'id_kriteria' => $kriteriaC4->id_kriteria,
                     'nama_subkriteria' => 'Kurang',
                     'nilai_awal' => 0,
-                    'nilai_akhir' => 69,
+                    'nilai_akhir' => 60,
                     'bobot_subkriteria' => 1,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -196,7 +196,7 @@ class SubKriteriaSeeder extends Seeder
             \DB::table('tb_subkriteria')->insert($subKriteriaC4);
         }
 
-        // Sub Kriteria C5 - Jumlah Poin Pelanggaran
+        // Sub Kriteria C5 - Ekstrakulikuler
         $kriteriaC5 = \DB::table('tb_kriteria')->where('kode_kriteria', 'C5')->first();
         
         if ($kriteriaC5) {
@@ -204,8 +204,8 @@ class SubKriteriaSeeder extends Seeder
                 [
                     'id_kriteria' => $kriteriaC5->id_kriteria,
                     'nama_subkriteria' => 'Sangat Baik',
-                    'nilai_awal' => 0,
-                    'nilai_akhir' => 0,
+                    'nilai_awal' => 90,
+                    'nilai_akhir' => 100,
                     'bobot_subkriteria' => 4,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -213,8 +213,8 @@ class SubKriteriaSeeder extends Seeder
                 [
                     'id_kriteria' => $kriteriaC5->id_kriteria,
                     'nama_subkriteria' => 'Baik',
-                    'nilai_awal' => 1,
-                    'nilai_akhir' => 5,
+                    'nilai_awal' => 80,
+                    'nilai_akhir' => 89,
                     'bobot_subkriteria' => 3,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -222,8 +222,8 @@ class SubKriteriaSeeder extends Seeder
                 [
                     'id_kriteria' => $kriteriaC5->id_kriteria,
                     'nama_subkriteria' => 'Cukup',
-                    'nilai_awal' => 6,
-                    'nilai_akhir' => 10,
+                    'nilai_awal' => 70,
+                    'nilai_akhir' => 79,
                     'bobot_subkriteria' => 2,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -231,8 +231,8 @@ class SubKriteriaSeeder extends Seeder
                 [
                     'id_kriteria' => $kriteriaC5->id_kriteria,
                     'nama_subkriteria' => 'Kurang',
-                    'nilai_awal' => 11,
-                    'nilai_akhir' => 999,
+                    'nilai_awal' => 0,
+                    'nilai_akhir' => 69,
                     'bobot_subkriteria' => 1,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -242,7 +242,7 @@ class SubKriteriaSeeder extends Seeder
             \DB::table('tb_subkriteria')->insert($subKriteriaC5);
         }
 
-        // Sub Kriteria C6 - Absensi
+        // Sub Kriteria C6 - Jumlah Poin Pelanggaran
         $kriteriaC6 = \DB::table('tb_kriteria')->where('kode_kriteria', 'C6')->first();
         
         if ($kriteriaC6) {
@@ -286,6 +286,52 @@ class SubKriteriaSeeder extends Seeder
             ];
 
             \DB::table('tb_subkriteria')->insert($subKriteriaC6);
+        }
+
+        // Sub Kriteria C7 - Absensi
+        $kriteriaC7 = \DB::table('tb_kriteria')->where('kode_kriteria', 'C7')->first();
+
+        if ($kriteriaC7) {
+            $subKriteriaC7 = [
+                [
+                    'id_kriteria' => $kriteriaC7->id_kriteria,
+                    'nama_subkriteria' => 'Sangat Baik',
+                    'nilai_awal' => 0,
+                    'nilai_akhir' => 0,
+                    'bobot_subkriteria' => 4,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'id_kriteria' => $kriteriaC7->id_kriteria,
+                    'nama_subkriteria' => 'Baik',
+                    'nilai_awal' => 1,
+                    'nilai_akhir' => 5,
+                    'bobot_subkriteria' => 3,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'id_kriteria' => $kriteriaC7->id_kriteria,
+                    'nama_subkriteria' => 'Cukup',
+                    'nilai_awal' => 6,
+                    'nilai_akhir' => 10,
+                    'bobot_subkriteria' => 2,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'id_kriteria' => $kriteriaC7->id_kriteria,
+                    'nama_subkriteria' => 'Kurang',
+                    'nilai_awal' => 11,
+                    'nilai_akhir' => 999,
+                    'bobot_subkriteria' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            ];
+
+            \DB::table('tb_subkriteria')->insert($subKriteriaC7);
         }
     }
 }

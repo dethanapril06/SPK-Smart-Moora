@@ -12,6 +12,7 @@ class HasilFinalis extends Model
     protected $fillable = [
         'id_siswa',
         'id_ta',
+        'id_semester',
         'user_id',
         'metode',
         'tingkat',
@@ -28,6 +29,11 @@ class HasilFinalis extends Model
     public function tahunAjaran()
     {
         return $this->belongsTo(TahunAjaran::class, 'id_ta');
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'id_semester');
     }
 
     public function user()

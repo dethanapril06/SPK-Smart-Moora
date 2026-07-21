@@ -11,9 +11,14 @@
                     <li class="breadcrumb-item active">Data Kelas</li>
                 </ol>
             </nav>
-            <a href="{{ route('admin.kelas.create') }}" class="btn btn-sm btn-primary">
-                <i class="bx bx-plus"></i>
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('admin.kelas.naik-kelas.index') }}" class="btn btn-sm btn-warning">
+                    <i class="bx bx-transfer-alt me-1"></i> Naik Kelas
+                </a>
+                <a href="{{ route('admin.kelas.create') }}" class="btn btn-sm btn-primary">
+                    <i class="bx bx-plus"></i>
+                </a>
+            </div>
         </div>
 
         @if (session('success'))
@@ -125,7 +130,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center">Tidak ada data kelas</td>
+                                <td colspan="7" class="text-center">Tidak ada data kelas</td>
                             </tr>
                         @endforelse
                     </tbody>

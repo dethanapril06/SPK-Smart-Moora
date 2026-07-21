@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NilaiPengetahuan;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
@@ -16,9 +17,11 @@ class NilaiPengetahuanController extends Controller
     public function index(Request $request)
     {
         $filterTA = $request->get('tahun_ajaran');
+        $filterSemester = $request->get('semester');
         $filterKelas = $request->get('kelas');
 
-        $tahunAjaranList = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
+        $semesterList = Semester::orderBy('id_semester')->get();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         
         $mapelList = $filterKelas
@@ -27,9 +30,9 @@ class NilaiPengetahuanController extends Controller
 
         $siswaList = collect();
 
-        if ($filterTA && $filterKelas) {
-            $siswaList = Siswa::with(['nilaiPengetahuan' => function ($q) use ($filterTA) {
-                $q->where('id_ta', $filterTA);
+        if ($filterTA && $filterSemester && $filterKelas) {
+            $siswaList = Siswa::with(['nilaiPengetahuan' => function ($q) use ($filterTA, $filterSemester) {
+                $q->where('id_ta', $filterTA)->where('id_semester', $filterSemester);
             }])
                 ->where('id_kelas', $filterKelas)
                 ->where('id_ta', $filterTA)
@@ -38,8 +41,8 @@ class NilaiPengetahuanController extends Controller
         }
 
         return view('admin.nilaipengetahuan.index', compact(
-            'siswaList', 'tahunAjaranList', 'kelasList', 'mapelList',
-            'filterTA', 'filterKelas'
+            'siswaList', 'tahunAjaranList', 'semesterList', 'kelasList', 'mapelList',
+            'filterTA', 'filterSemester', 'filterKelas'
         ));
     }
 
@@ -47,6 +50,7 @@ class NilaiPengetahuanController extends Controller
     {
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
+            'id_semester' => 'required|exists:tb_semester,id_semester',
             'id_kelas' => 'required',
             'nilai' => 'required|array',
             'nilai.*.*' => 'nullable|numeric|min:0|max:100',
@@ -62,6 +66,7 @@ class NilaiPengetahuanController extends Controller
                                 'id_siswa' => $id_siswa,
                                 'id_mapel' => $id_mapel,
                                 'id_ta' => $validated['id_ta'],
+                                'id_semester' => $validated['id_semester'],
                             ],
                             ['nilai' => $nilai]
                         );

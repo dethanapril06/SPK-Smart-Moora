@@ -108,7 +108,7 @@
                                 @foreach ($tahunAjaran as $ta)
                                     <option value="{{ $ta->id_ta }}"
                                         {{ old('id_ta') == $ta->id_ta ? 'selected' : '' }}>
-                                        {{ $ta->tahun_ajaran }} - {{ $ta->semester }}
+                                        {{ $ta->tahun_ajaran }}
                                         @if ($ta->is_active)
                                             <span>(Aktif)</span>
                                         @endif

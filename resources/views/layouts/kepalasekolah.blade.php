@@ -326,6 +326,9 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <!-- Dynamic Semester Dropdown JS -->
+    @include('partials.dynamic_semester_js')
+
     <!-- Page specific scripts -->
     @stack('scripts')
 

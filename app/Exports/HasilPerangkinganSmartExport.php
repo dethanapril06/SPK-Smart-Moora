@@ -19,25 +19,30 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class HasilPerangkinganSmartExport implements FromCollection, WithHeadings, WithMapping, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
     protected $filterTA;
+    protected $filterSemester;
     protected $userId;
     protected $filterKelas;
     protected $tahunAjaran;
+    protected $semester;
     protected $sourceName;
     protected $rowCount = 0;
 
-    public function __construct($filterTA, $userId, $filterKelas, $tahunAjaran, $sourceName)
+    public function __construct($filterTA, $filterSemester, $userId, $filterKelas, $tahunAjaran, $semester, $sourceName)
     {
-        $this->filterTA    = $filterTA;
-        $this->userId      = $userId;
-        $this->filterKelas = $filterKelas;
-        $this->tahunAjaran = $tahunAjaran;
-        $this->sourceName  = $sourceName;
+        $this->filterTA       = $filterTA;
+        $this->filterSemester = $filterSemester;
+        $this->userId         = $userId;
+        $this->filterKelas    = $filterKelas;
+        $this->tahunAjaran    = $tahunAjaran;
+        $this->semester       = $semester;
+        $this->sourceName     = $sourceName;
     }
 
     public function collection()
     {
         $data = HasilAkhir::with(['siswa.kelas'])
             ->where('id_ta', $this->filterTA)
+            ->when($this->filterSemester, fn($q) => $q->where('id_semester', $this->filterSemester))
             ->whereNotNull('rank_smart')
             ->when($this->userId, fn($q) => $q->where('user_id', $this->userId))
             ->when($this->filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
@@ -95,8 +100,9 @@ class HasilPerangkinganSmartExport implements FromCollection, WithHeadings, With
 
                 $sheet->insertNewRowBefore(1, 3);
 
+                $semLabel = $this->semester ? $this->semester->nama_semester : $this->tahunAjaran->semester;
                 $sheet->setCellValue('A1', 'LAPORAN HASIL PERANGKINGAN SISWA — METODE SMART');
-                $sheet->setCellValue('A2', 'Tahun Ajaran: ' . $this->tahunAjaran->tahun_ajaran . ' - ' . $this->tahunAjaran->semester);
+                $sheet->setCellValue('A2', 'Tahun Ajaran: ' . $this->tahunAjaran->tahun_ajaran . ' - ' . $semLabel);
                 $sheet->setCellValue('A3', 'Sumber: ' . $this->sourceName);
 
                 foreach (['A1', 'A2', 'A3'] as $cell) {

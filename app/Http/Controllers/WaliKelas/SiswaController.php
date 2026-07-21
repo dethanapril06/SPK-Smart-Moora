@@ -41,7 +41,7 @@ class SiswaController extends Controller
     public function create()
     {
         $kelas = $this->getKelas();
-        $tahunAjaran = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaran = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
 
         return view('walikelas.siswa.create', compact('kelas', 'tahunAjaran'));
     }
@@ -88,7 +88,7 @@ class SiswaController extends Controller
         $kelas = $this->getKelas();
         abort_if($siswa->id_kelas !== $kelas->id_kelas, 403, 'Siswa bukan anggota kelas Anda.');
 
-        $tahunAjaran = TahunAjaran::orderBy('tahun_ajaran', 'desc')->get();
+        $tahunAjaran = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
 
         return view('walikelas.siswa.edit', compact('siswa', 'kelas', 'tahunAjaran'));
     }
