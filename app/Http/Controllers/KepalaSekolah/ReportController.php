@@ -2,10 +2,6 @@
 
 namespace App\Http\Controllers\KepalaSekolah;
 
-<?php
-
-namespace App\Http\Controllers\KepalaSekolah;
-
 use App\Http\Controllers\Controller;
 use App\Exports\HasilPerangkinganSmartExport;
 use App\Exports\HasilPerangkinganMooraExport;

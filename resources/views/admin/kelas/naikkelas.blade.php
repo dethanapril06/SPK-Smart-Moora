@@ -36,6 +36,19 @@
             </div>
         @endif
 
+        <div class="alert alert-primary mb-4" role="alert">
+            <div class="d-flex align-items-start">
+                <i class="bx bx-info-circle fs-4 me-2 mt-1"></i>
+                <div>
+                    <strong>Petunjuk Kenaikan Kelas:</strong>
+                    <ul class="mb-0 ps-3 mt-1 text-muted">
+                        <li>Data siswa dipisahkan secara otomatis berdasarkan <strong>Tahun Ajaran</strong>, sehingga tidak akan bercampur dengan data tahun pelajaran sebelumnya.</li>
+                        <li>Disarankan memproses kenaikan kelas secara berurutan dari <strong>Kelas XI ke XII</strong> terlebih dahulu, baru kemudian <strong>Kelas X ke XI</strong>.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <div class="card mb-4">
             <div class="card-body">
                 <form action="{{ route('admin.kelas.naik-kelas.index') }}" method="GET">
@@ -44,18 +57,18 @@
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran Sumber</label>
                             <select class="form-select" id="tahun_ajaran" name="tahun_ajaran" required>
                                 <option value="">-- Pilih Tahun Ajaran --</option>
-                                @foreach ($tahunAjaranList as $tahunAjaran)
-                                    <option value="{{ $tahunAjaran }}"
-                                        {{ $sourceTahunAjaran === $tahunAjaran ? 'selected' : '' }}>
-                                        {{ $tahunAjaran }}
+                                @foreach ($tahunAjaranList as $ta)
+                                    <option value="{{ $ta }}"
+                                        {{ $sourceTahunAjaran === $ta ? 'selected' : '' }}>
+                                        {{ $ta }}{{ $activeTahunAjaran === $ta ? ' (Aktif)' : '' }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label" for="id_kelas">Kelas X Sumber</label>
+                            <label class="form-label" for="id_kelas">Kelas Sumber (X / XI)</label>
                             <select class="form-select" id="id_kelas" name="id_kelas" required>
-                                <option value="">-- Pilih Kelas X --</option>
+                                <option value="">-- Pilih Kelas Sumber --</option>
                                 @foreach ($kelasList as $kelas)
                                     <option value="{{ $kelas->id_kelas }}"
                                         {{ $sourceKelasId == $kelas->id_kelas ? 'selected' : '' }}>
@@ -83,7 +96,7 @@
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                             <div>
                                 <h5 class="mb-1">Naik Kelas dari {{ $selectedKelas->nama_kelas }}</h5>
-                                <small class="text-muted">Pilih kelas tujuan XI per siswa untuk tahun ajaran baru.</small>
+                                <small class="text-muted">Pilih kelas tujuan per siswa untuk tahun ajaran baru.</small>
                             </div>
                             <div class="text-muted">
                                 Total siswa: <strong>{{ $siswaList->count() }}</strong>
@@ -96,9 +109,23 @@
                             <input type="hidden" name="tahun_ajaran" value="{{ $sourceTahunAjaran }}">
                             <input type="hidden" name="id_kelas" value="{{ $sourceKelasId }}">
 
-                            <div class="alert alert-info mb-3">
-                                Tahun ajaran tujuan otomatis menjadi <strong>{{ $targetTahunAjaranLabel }}</strong>
-                                semester <strong>Ganjil</strong>.
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="alert alert-info mb-0 py-2 flex-grow-1 me-3">
+                                    Menampilkan data siswa dari Tahun Ajaran <strong>{{ $sourceTahunAjaranRecord->tahun_ajaran }} (Semester {{ $sourceTahunAjaranRecord->semester }})</strong>.<br>
+                                    Tahun ajaran tujuan otomatis menjadi <strong>{{ $targetTahunAjaranLabel }}</strong>
+                                    semester <strong>Ganjil</strong>.
+                                </div>
+                                <div class="card p-2 bg-light border" style="min-width: 250px;">
+                                    <label class="form-label small fw-bold mb-1"><i class="bx bx-check-double me-1"></i> Set Semua Kelas Tujuan:</label>
+                                    <select class="form-select form-select-sm" id="batch_set_kelas">
+                                        <option value="">-- Set Serentak --</option>
+                                        @foreach ($targetKelasList as $targetKelas)
+                                            <option value="{{ $targetKelas->id_kelas }}" {{ ($defaultTargetKelasId === $targetKelas->id_kelas) ? 'selected' : '' }}>
+                                                {{ $targetKelas->nama_kelas }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
 
                             <div class="table-responsive">
@@ -120,11 +147,12 @@
                                                 </td>
                                                 <td>{{ $siswa->nisn }}</td>
                                                 <td>
-                                                    <select class="form-select" name="tujuan[{{ $siswa->id_siswa }}]"
+                                                    <select class="form-select target-kelas-select" name="tujuan[{{ $siswa->id_siswa }}]"
                                                         required>
-                                                        <option value="">-- Pilih Kelas XI Tujuan --</option>
+                                                        <option value="">-- Pilih Kelas Tujuan --</option>
                                                         @foreach ($targetKelasList as $targetKelas)
-                                                            <option value="{{ $targetKelas->id_kelas }}">
+                                                            <option value="{{ $targetKelas->id_kelas }}"
+                                                                {{ ($defaultTargetKelasId === $targetKelas->id_kelas) ? 'selected' : '' }}>
                                                                 {{ $targetKelas->nama_kelas }}
                                                             </option>
                                                         @endforeach
@@ -137,8 +165,7 @@
                             </div>
 
                             <div class="alert alert-warning mt-3 mb-0">
-                                Setiap siswa kelas X dipilih satu per satu ke kelas XI tujuan. Pastikan kapasitas kelas
-                                tujuan cukup.
+                                Setiap siswa dipilih satu per satu ke kelas tujuan. Pastikan kapasitas kelas tujuan cukup.
                             </div>
 
                             <div class="mt-3 text-end">
@@ -153,7 +180,25 @@
         @elseif($sourceTahunAjaran || $sourceKelasId)
             <div class="alert alert-info">Pilih tahun ajaran dan kelas X terlebih dahulu.</div>
         @else
-            <div class="alert alert-info">Pilih tahun ajaran sumber dan kelas X untuk menampilkan daftar siswa.</div>
+            <div class="alert alert-info">Pilih tahun ajaran sumber dan kelas sumber untuk menampilkan daftar siswa.</div>
         @endif
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const batchSelect = document.getElementById('batch_set_kelas');
+                if (batchSelect) {
+                    batchSelect.addEventListener('change', function () {
+                        const val = this.value;
+                        if (val) {
+                            document.querySelectorAll('.target-kelas-select').forEach(sel => {
+                                sel.value = val;
+                            });
+                        }
+                    });
+                }
+            });
+        </script>
+    @endpush
 @endsection

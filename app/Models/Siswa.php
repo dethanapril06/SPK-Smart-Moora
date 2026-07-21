@@ -18,7 +18,19 @@ class Siswa extends Model
         'alamat',
         'id_kelas',
         'id_ta',
+        'status',
+        'tahun_lulus',
     ];
+
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'aktif');
+    }
+
+    public function scopeLulus($query)
+    {
+        return $query->where('status', 'lulus');
+    }
 
     // Relasi dengan Kelas
     public function kelas()

@@ -12,6 +12,9 @@
                 </ol>
             </nav>
             <div class="d-flex gap-2">
+                <a href="{{ route('admin.kelas.kelulusan.index') }}" class="btn btn-sm btn-success">
+                    <i class="bx bx-graduation me-1"></i> Kelulusan
+                </a>
                 <a href="{{ route('admin.kelas.naik-kelas.index') }}" class="btn btn-sm btn-warning">
                     <i class="bx bx-transfer-alt me-1"></i> Naik Kelas
                 </a>

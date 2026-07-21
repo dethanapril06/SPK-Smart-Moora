@@ -9,6 +9,20 @@
             </ol>
         </nav>
 
+        @if ($kelas)
+            <div class="d-flex gap-2 mb-4">
+                @if(str_starts_with($kelas->id_kelas, 'XII.'))
+                    <a href="{{ route('walikelas.kelas.kelulusan.index') }}" class="btn btn-success btn-sm">
+                        <i class="bx bx-graduation me-1"></i> Kelulusan Siswa
+                    </a>
+                @elseif(preg_match('/^(X|XI)\./', $kelas->id_kelas))
+                    <a href="{{ route('walikelas.kelas.naik-kelas.index') }}" class="btn btn-warning btn-sm">
+                        <i class="bx bx-transfer-alt me-1"></i> Naik Kelas
+                    </a>
+                @endif
+            </div>
+        @endif
+
         @if (!$kelas)
             <div class="alert alert-warning">
                 <i class="bx bx-error"></i> Anda belum ditugaskan sebagai wali kelas.

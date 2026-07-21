@@ -55,6 +55,10 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
         ->name('admin.kelas.naik-kelas.index');
     Route::post('kelas/naik-kelas', [\App\Http\Controllers\Admin\KelasController::class, 'prosesNaikKelas'])
         ->name('admin.kelas.naik-kelas.store');
+    Route::get('kelas/kelulusan', [\App\Http\Controllers\Admin\KelasController::class, 'kelulusan'])
+        ->name('admin.kelas.kelulusan.index');
+    Route::post('kelas/kelulusan', [\App\Http\Controllers\Admin\KelasController::class, 'prosesKelulusan'])
+        ->name('admin.kelas.kelulusan.store');
     Route::resource('kelas', \App\Http\Controllers\Admin\KelasController::class, [
         'as' => 'admin'
     ]);
@@ -187,7 +191,15 @@ Route::prefix('wali-kelas')->middleware(['auth', 'check.level:Wali Kelas'])->gro
     Route::get('/dashboard', [\App\Http\Controllers\WaliKelas\DashboardController::class, 'index'])
         ->name('walikelas.dashboard');
 
-    // Kelas (read-only)
+    // Kelas (read-only + naik kelas + kelulusan)
+    Route::get('kelas/naik-kelas', [\App\Http\Controllers\WaliKelas\KelasController::class, 'naikKelas'])
+        ->name('walikelas.kelas.naik-kelas.index');
+    Route::post('kelas/naik-kelas', [\App\Http\Controllers\WaliKelas\KelasController::class, 'prosesNaikKelas'])
+        ->name('walikelas.kelas.naik-kelas.store');
+    Route::get('kelas/kelulusan', [\App\Http\Controllers\WaliKelas\KelasController::class, 'kelulusan'])
+        ->name('walikelas.kelas.kelulusan.index');
+    Route::post('kelas/kelulusan', [\App\Http\Controllers\WaliKelas\KelasController::class, 'prosesKelulusan'])
+        ->name('walikelas.kelas.kelulusan.store');
     Route::get('kelas', [\App\Http\Controllers\WaliKelas\KelasController::class, 'index'])
         ->name('walikelas.kelas.index');
     Route::get('kelas/{kelas}', [\App\Http\Controllers\WaliKelas\KelasController::class, 'show'])

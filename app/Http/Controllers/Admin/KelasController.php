@@ -25,39 +25,49 @@ class KelasController extends Controller
             ->orderByDesc('tahun_ajaran')
             ->pluck('tahun_ajaran');
 
-        $kelasList = Kelas::where('id_kelas', 'like', 'X.%')
-            ->orderBy('nama_kelas')
-            ->get();
+        $activeTahunAjaran = TahunAjaran::where('is_active', true)->value('tahun_ajaran');
 
-        $targetKelasList = Kelas::where('id_kelas', 'like', 'XI.%')
+        $kelasList = Kelas::where('id_kelas', 'not like', 'XII.%')
             ->orderBy('nama_kelas')
             ->get();
 
         $sourceTahunAjaranRecord = $sourceTahunAjaran
-            ? $this->resolveTahunAjaranByYear($sourceTahunAjaran)
+            ? $this->resolveTahunAjaranByYear($sourceTahunAjaran, $sourceKelasId)
             : null;
         $targetTahunAjaranLabel = $sourceTahunAjaranRecord
             ? $this->getNextTahunAjaranLabel($sourceTahunAjaranRecord->tahun_ajaran)
             : null;
 
-        $selectedKelas = null;
+        $selectedKelas = $sourceKelasId ? Kelas::find($sourceKelasId) : null;
+        $targetKelasList = collect();
         $siswaList = collect();
+        $defaultTargetKelasId = null;
 
-        if ($sourceTahunAjaranRecord && $sourceKelasId) {
-            $selectedKelas = Kelas::find($sourceKelasId);
-
-            if ($selectedKelas && $this->isKelasX($selectedKelas->id_kelas)) {
-                $siswaList = Siswa::where('id_ta', $sourceTahunAjaranRecord->id_ta)
-                    ->where('id_kelas', $sourceKelasId)
-                    ->orderBy('nama_siswa')
-                    ->get();
+        if ($selectedKelas) {
+            if (str_starts_with($selectedKelas->id_kelas, 'X.')) {
+                $targetKelasList = Kelas::where('id_kelas', 'like', 'XI.%')->orderBy('nama_kelas')->get();
+            } elseif (str_starts_with($selectedKelas->id_kelas, 'XI.')) {
+                $targetKelasList = Kelas::where('id_kelas', 'like', 'XII.%')->orderBy('nama_kelas')->get();
+                $possibleDefault = str_replace('XI.', 'XII.', $selectedKelas->id_kelas);
+                if ($targetKelasList->contains('id_kelas', $possibleDefault)) {
+                    $defaultTargetKelasId = $possibleDefault;
+                }
             }
+        }
+
+        if ($sourceTahunAjaranRecord && $selectedKelas && $this->isPromotableKelas($selectedKelas->id_kelas)) {
+            $siswaList = Siswa::where('id_ta', $sourceTahunAjaranRecord->id_ta)
+                ->where('id_kelas', $sourceKelasId)
+                ->orderBy('nama_siswa')
+                ->get();
         }
 
         return view('admin.kelas.naikkelas', compact(
             'tahunAjaranList',
+            'activeTahunAjaran',
             'kelasList',
             'targetKelasList',
+            'defaultTargetKelasId',
             'sourceTahunAjaranRecord',
             'targetTahunAjaranLabel',
             'selectedKelas',
@@ -76,7 +86,7 @@ class KelasController extends Controller
             'tujuan.*' => 'required|exists:tb_kelas,id_kelas',
         ]);
 
-        $sourceTahunAjaran = $this->resolveTahunAjaranByYear($validated['tahun_ajaran']);
+        $sourceTahunAjaran = $this->resolveTahunAjaranByYear($validated['tahun_ajaran'], $validated['id_kelas']);
         if (!$sourceTahunAjaran) {
             return back()->with('error', 'Tahun ajaran sumber tidak ditemukan.');
         }
@@ -84,8 +94,8 @@ class KelasController extends Controller
         $targetTahunAjaran = $this->resolveNextTahunAjaran($sourceTahunAjaran);
 
         $sourceKelas = Kelas::findOrFail($validated['id_kelas']);
-        if (!$this->isKelasX($sourceKelas->id_kelas)) {
-            return back()->with('error', 'Fitur naik kelas ini hanya untuk kelas X.');
+        if (!$this->isPromotableKelas($sourceKelas->id_kelas)) {
+            return back()->with('error', 'Fitur naik kelas ini hanya untuk kelas X dan kelas XI.');
         }
 
         $siswaList = Siswa::where('id_ta', $sourceTahunAjaran->id_ta)
@@ -105,19 +115,34 @@ class KelasController extends Controller
         foreach ($assignedCounts as $targetKelasId => $count) {
             $targetKelas = $targetKelasMap->get($targetKelasId);
             if (!$targetKelas) {
-                throw ValidationException::withMessages([
-                    'tujuan' => "Kelas tujuan {$targetKelasId} tidak valid.",
-                ]);
+                return redirect()->route('admin.kelas.naik-kelas.index', [
+                    'tahun_ajaran' => $validated['tahun_ajaran'],
+                    'id_kelas' => $validated['id_kelas'],
+                ])->with('error', "Kelas tujuan {$targetKelasId} tidak ditemukan.");
             }
 
-            $currentTargetCount = Siswa::where('id_ta', $targetTahunAjaran->id_ta)
+            // Hitung siswa di kelas tujuan yang belum dinaikkan (masih di tahun ajaran sumber)
+            $unpromotedCount = Siswa::where('id_ta', $sourceTahunAjaran->id_ta)
                 ->where('id_kelas', $targetKelasId)
                 ->count();
 
-            if ($currentTargetCount + $count > (int) $targetKelas->kapasitas) {
-                throw ValidationException::withMessages([
-                    'tujuan' => "Kapasitas {$targetKelas->nama_kelas} tidak cukup untuk menampung {$count} siswa tambahan.",
-                ]);
+            // Hitung siswa yang sudah terdaftar di kelas tujuan pada tahun ajaran baru
+            $alreadyPromotedCount = Siswa::where('id_ta', $targetTahunAjaran->id_ta)
+                ->where('id_kelas', $targetKelasId)
+                ->count();
+
+            $totalOccupants = $unpromotedCount + $alreadyPromotedCount;
+            $kapasitas = (int) $targetKelas->kapasitas;
+
+            if ($kapasitas > 0 && ($totalOccupants + $count > $kapasitas)) {
+                $detailMsg = $unpromotedCount > 0
+                    ? "Siswa penghuni {$targetKelas->nama_kelas} di tahun ajaran ini sebanyak {$unpromotedCount} siswa BELUM dinaikkan ke kelas tingkat atas (XII). Silakan naikkan terlebih dahulu siswa {$targetKelas->nama_kelas} ke kelas XII!"
+                    : "Kelas {$targetKelas->nama_kelas} untuk tahun ajaran baru sudah terisi {$alreadyPromotedCount} siswa, dan Anda mencoba menambahkan {$count} siswa lagi.";
+
+                return redirect()->route('admin.kelas.naik-kelas.index', [
+                    'tahun_ajaran' => $validated['tahun_ajaran'],
+                    'id_kelas' => $validated['id_kelas'],
+                ])->with('error', "Kapasitas {$targetKelas->nama_kelas} tidak mencukupi! Kapasitas maksimal adalah {$kapasitas} siswa. {$detailMsg}");
             }
         }
 
@@ -139,7 +164,94 @@ class KelasController extends Controller
         return redirect()->route('admin.kelas.naik-kelas.index', [
             'tahun_ajaran' => $validated['tahun_ajaran'],
             'id_kelas' => $validated['id_kelas'],
-        ])->with('success', 'Naik kelas berhasil diproses untuk siswa kelas X yang dipilih.');
+        ])->with('success', 'Naik kelas berhasil diproses untuk siswa yang dipilih.');
+    }
+
+    public function kelulusan(Request $request)
+    {
+        $sourceTahunAjaran = $request->get('tahun_ajaran');
+        $sourceKelasId = $request->get('id_kelas');
+
+        $tahunAjaranList = TahunAjaran::query()
+            ->select('tahun_ajaran')
+            ->distinct()
+            ->orderByDesc('tahun_ajaran')
+            ->pluck('tahun_ajaran');
+
+        $activeTahunAjaran = TahunAjaran::where('is_active', true)->value('tahun_ajaran');
+
+        $kelasList = Kelas::where('id_kelas', 'like', 'XII.%')
+            ->orderBy('nama_kelas')
+            ->get();
+
+        $sourceTahunAjaranRecord = $sourceTahunAjaran
+            ? $this->resolveTahunAjaranByYear($sourceTahunAjaran, $sourceKelasId)
+            : null;
+
+        $selectedKelas = $sourceKelasId ? Kelas::find($sourceKelasId) : null;
+        $siswaList = collect();
+
+        if ($sourceTahunAjaranRecord && $selectedKelas && str_starts_with($selectedKelas->id_kelas, 'XII.')) {
+            $siswaList = Siswa::aktif()
+                ->where('id_ta', $sourceTahunAjaranRecord->id_ta)
+                ->where('id_kelas', $sourceKelasId)
+                ->orderBy('nama_siswa')
+                ->get();
+        }
+
+        return view('admin.kelas.kelulusan', compact(
+            'tahunAjaranList',
+            'activeTahunAjaran',
+            'kelasList',
+            'sourceTahunAjaranRecord',
+            'selectedKelas',
+            'siswaList',
+            'sourceTahunAjaran',
+            'sourceKelasId'
+        ));
+    }
+
+    public function prosesKelulusan(Request $request)
+    {
+        $validated = $request->validate([
+            'tahun_ajaran' => 'required|string|max:50',
+            'id_kelas' => 'required|exists:tb_kelas,id_kelas',
+            'siswa_ids' => 'required|array|min:1',
+            'siswa_ids.*' => 'required|exists:tb_siswa,id_siswa',
+        ], [
+            'siswa_ids.required' => 'Pilih minimal 1 siswa untuk diluluskan.',
+            'siswa_ids.min' => 'Pilih minimal 1 siswa untuk diluluskan.',
+        ]);
+
+        $sourceKelas = Kelas::findOrFail($validated['id_kelas']);
+        if (!str_starts_with($sourceKelas->id_kelas, 'XII.')) {
+            return back()->with('error', 'Fitur kelulusan hanya untuk siswa kelas XII.');
+        }
+
+        $tahunAjaranRecord = $this->resolveTahunAjaranByYear($validated['tahun_ajaran'], $validated['id_kelas']);
+        if (!$tahunAjaranRecord) {
+            return back()->with('error', 'Tahun ajaran tidak ditemukan.');
+        }
+
+        [$startYear] = $this->parseTahunAjaran($validated['tahun_ajaran']);
+        $tahunLulus = $startYear + 1;
+
+        $count = DB::transaction(function () use ($validated, $tahunAjaranRecord, $tahunLulus) {
+            return Siswa::aktif()
+                ->where('id_ta', $tahunAjaranRecord->id_ta)
+                ->where('id_kelas', $validated['id_kelas'])
+                ->whereIn('id_siswa', $validated['siswa_ids'])
+                ->update([
+                    'status' => 'lulus',
+                    'id_kelas' => null,
+                    'tahun_lulus' => $tahunLulus,
+                ]);
+        });
+
+        return redirect()->route('admin.kelas.kelulusan.index', [
+            'tahun_ajaran' => $validated['tahun_ajaran'],
+            'id_kelas' => $validated['id_kelas'],
+        ])->with('success', "{$count} siswa berhasil diluluskan dari {$sourceKelas->nama_kelas} tahun {$tahunLulus}.");
     }
 
     /**
@@ -271,12 +383,29 @@ class KelasController extends Controller
         $kelas->mataPelajaran()->sync(MataPelajaran::pluck('id_mapel')->all());
     }
 
-    private function resolveTahunAjaranByYear(string $tahunAjaran): ?TahunAjaran
+    private function resolveTahunAjaranByYear(string $tahunAjaran, ?string $idKelas = null): ?TahunAjaran
     {
-        return TahunAjaran::where('tahun_ajaran', $tahunAjaran)
+        $records = TahunAjaran::where('tahun_ajaran', $tahunAjaran)
             ->orderByRaw("CASE WHEN semester = 'Genap' THEN 1 ELSE 2 END")
             ->orderByDesc('id_ta')
-            ->first();
+            ->get();
+
+        if ($records->isEmpty()) {
+            return null;
+        }
+
+        if ($idKelas) {
+            foreach ($records as $record) {
+                $hasSiswa = Siswa::where('id_ta', $record->id_ta)
+                    ->where('id_kelas', $idKelas)
+                    ->exists();
+                if ($hasSiswa) {
+                    return $record;
+                }
+            }
+        }
+
+        return $records->first();
     }
 
     private function resolveNextTahunAjaran(TahunAjaran $sourceTahunAjaran): TahunAjaran
@@ -316,8 +445,8 @@ class KelasController extends Controller
         return [(int) $matches[1], (int) $matches[2]];
     }
 
-    private function isKelasX(string $idKelas): bool
+    private function isPromotableKelas(string $idKelas): bool
     {
-        return preg_match('/^X\.\d+$/', $idKelas) === 1;
+        return preg_match('/^(X|XI)\./', $idKelas) === 1;
     }
 }
