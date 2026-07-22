@@ -26,6 +26,16 @@ class NilaiSikapController extends Controller
         $filterTA = $request->get('tahun_ajaran');
         $filterSemester = $request->get('semester');
 
+        if (!$filterTA) {
+            $activeTA = TahunAjaran::where('is_active', 1)->first();
+            $filterTA = $activeTA ? $activeTA->id_ta : null;
+        }
+
+        if (!$filterSemester) {
+            $activeSemester = Semester::where('is_active', 1)->first();
+            $filterSemester = $activeSemester ? $activeSemester->id_semester : null;
+        }
+
         $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
         $semesterList = Semester::orderBy('id_semester')->get();
         $predikatList = ['Sangat Baik', 'Baik', 'Cukup', 'Kurang'];
