@@ -154,10 +154,16 @@
 
             <!-- Data Referensi -->
             <li class="menu-header small text-uppercase"><span class="menu-header-text">Data Referensi</span></li>
-            <li class="menu-item {{ request()->is('kepala-sekolah/siswa*') ? 'active' : '' }}">
+            <li class="menu-item {{ request()->is('kepala-sekolah/siswa') || (request()->is('kepala-sekolah/siswa/*') && !request()->is('kepala-sekolah/siswa-lulus*')) ? 'active' : '' }}">
               <a href="{{ route('kepalasekolah.siswa.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-group"></i>
-                <div data-i18n="Siswa">Siswa</div>
+                <div data-i18n="Siswa">Siswa Aktif</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('kepala-sekolah/siswa-lulus*') ? 'active' : '' }}">
+              <a href="{{ route('kepalasekolah.siswa.lulus') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user-check"></i>
+                <div data-i18n="Siswa Lulus">Siswa Lulus</div>
               </a>
             </li>
             <li class="menu-item {{ request()->is('kepala-sekolah/kelas*') ? 'active' : '' }}">

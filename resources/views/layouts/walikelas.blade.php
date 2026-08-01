@@ -161,10 +161,16 @@
                 <div data-i18n="Kelas Saya">Kelas Saya</div>
               </a>
             </li>
-            <li class="menu-item {{ request()->is('wali-kelas/siswa*') ? 'active' : '' }}">
+            <li class="menu-item {{ request()->is('wali-kelas/siswa') || (request()->is('wali-kelas/siswa/*') && !request()->is('wali-kelas/siswa-lulus*')) ? 'active' : '' }}">
               <a href="{{ route('walikelas.siswa.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-group"></i>
-                <div data-i18n="Siswa">Siswa</div>
+                <div data-i18n="Siswa">Siswa Kelas</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('wali-kelas/siswa-lulus*') ? 'active' : '' }}">
+              <a href="{{ route('walikelas.siswa.lulus') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user-check"></i>
+                <div data-i18n="Siswa Lulus">Siswa Lulus</div>
               </a>
             </li>
 

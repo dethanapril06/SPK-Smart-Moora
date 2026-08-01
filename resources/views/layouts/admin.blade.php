@@ -173,10 +173,16 @@
                 <div data-i18n="Tahun Ajaran">Tahun Ajaran</div>
               </a>
             </li>
-            <li class="menu-item {{ request()->is('admin/siswa*') ? 'active' : '' }}">
+            <li class="menu-item {{ request()->is('admin/siswa') || (request()->is('admin/siswa/*') && !request()->is('admin/siswa-lulus*')) ? 'active' : '' }}">
               <a href="{{ route('admin.siswa.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-group"></i>
-                <div data-i18n="Siswa">Siswa</div>
+                <div data-i18n="Siswa">Siswa Aktif</div>
+              </a>
+            </li>
+            <li class="menu-item {{ request()->is('admin/siswa-lulus*') ? 'active' : '' }}">
+              <a href="{{ route('admin.siswa.lulus') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user-check"></i>
+                <div data-i18n="Siswa Lulus">Siswa Lulus</div>
               </a>
             </li>
             <li class="menu-item {{ request()->is('admin/kriteria*') ? 'active' : '' }}">

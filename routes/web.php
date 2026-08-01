@@ -73,6 +73,10 @@ Route::prefix('admin')->middleware(['auth', 'check.level:Admin'])->group(functio
         ->name('admin.tahunajaran.set-active');
 
     // Siswa Management Routes
+    Route::get('siswa-lulus', [\App\Http\Controllers\Admin\SiswaController::class, 'lulus'])
+        ->name('admin.siswa.lulus');
+    Route::get('siswa-lulus/pdf', [\App\Http\Controllers\Admin\SiswaController::class, 'exportPdfLulus'])
+        ->name('admin.siswa.lulus.pdf');
     Route::resource('siswa', \App\Http\Controllers\Admin\SiswaController::class, [
         'as' => 'admin'
     ]);
@@ -226,6 +230,10 @@ Route::prefix('wali-kelas')->middleware(['auth', 'check.level:Wali Kelas'])->gro
         ->name('walikelas.jenispelanggaran.index');
 
     // Siswa Management (scoped to wali kelas's class)
+    Route::get('siswa-lulus', [\App\Http\Controllers\WaliKelas\SiswaController::class, 'lulus'])
+        ->name('walikelas.siswa.lulus');
+    Route::get('siswa-lulus/pdf', [\App\Http\Controllers\WaliKelas\SiswaController::class, 'exportPdfLulus'])
+        ->name('walikelas.siswa.lulus.pdf');
     Route::resource('siswa', \App\Http\Controllers\WaliKelas\SiswaController::class, [
         'as' => 'walikelas'
     ]);
@@ -319,6 +327,10 @@ Route::prefix('kepala-sekolah')->middleware(['auth', 'check.level:Kepala Sekolah
     // Siswa (read-only)
     Route::get('siswa', [\App\Http\Controllers\KepalaSekolah\SiswaController::class, 'index'])
         ->name('kepalasekolah.siswa.index');
+    Route::get('siswa-lulus', [\App\Http\Controllers\KepalaSekolah\SiswaController::class, 'lulus'])
+        ->name('kepalasekolah.siswa.lulus');
+    Route::get('siswa-lulus/pdf', [\App\Http\Controllers\KepalaSekolah\SiswaController::class, 'exportPdfLulus'])
+        ->name('kepalasekolah.siswa.lulus.pdf');
 
     // Kelas (read-only)
     Route::get('kelas', [\App\Http\Controllers\KepalaSekolah\KelasController::class, 'index'])

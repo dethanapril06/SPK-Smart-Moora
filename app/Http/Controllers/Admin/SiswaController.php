@@ -7,6 +7,7 @@ use App\Models\Siswa;
 use App\Models\Kelas;
 use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SiswaController extends Controller
 {
@@ -17,7 +18,7 @@ class SiswaController extends Controller
     {
         $search = $request->get('search');
         
-        $siswa = Siswa::with(['kelas', 'tahunAjaran'])
+        $siswa = Siswa::aktif()->with(['kelas', 'tahunAjaran'])
             ->when($search, function ($query, $search) {
                 return $query->where('nisn', 'like', "%{$search}%")
                     ->orWhere('nama_siswa', 'like', "%{$search}%")
@@ -133,5 +134,88 @@ class SiswaController extends Controller
 
         return redirect()->route('admin.siswa.index')
             ->with('success', 'Data siswa berhasil dihapus.');
+    }
+
+    /**
+     * Display a listing of graduated students.
+     */
+    public function lulus(Request $request)
+    {
+        $search = $request->get('search');
+        $tahunLulus = $request->get('tahun_lulus');
+        $jenisKelamin = $request->get('jenis_kelamin');
+
+        $siswa = Siswa::lulus()
+            ->when($search, function ($q, $search) {
+                return $q->where(function ($sub) use ($search) {
+                    $sub->where('nisn', 'like', "%{$search}%")
+                        ->orWhere('nama_siswa', 'like', "%{$search}%")
+                        ->orWhere('alamat', 'like', "%{$search}%");
+                });
+            })
+            ->when($tahunLulus, function ($q, $tahunLulus) {
+                return $q->where('tahun_lulus', $tahunLulus);
+            })
+            ->when($jenisKelamin, function ($q, $jenisKelamin) {
+                return $q->where('jenis_kelamin', $jenisKelamin);
+            })
+            ->orderBy('tahun_lulus', 'desc')
+            ->orderBy('nama_siswa', 'asc')
+            ->paginate(15)
+            ->appends($request->all());
+
+        $tahunLulusList = Siswa::lulus()
+            ->whereNotNull('tahun_lulus')
+            ->select('tahun_lulus')
+            ->distinct()
+            ->orderBy('tahun_lulus', 'desc')
+            ->pluck('tahun_lulus');
+
+        return view('admin.siswa.lulus', compact(
+            'siswa',
+            'search',
+            'tahunLulus',
+            'jenisKelamin',
+            'tahunLulusList'
+        ));
+    }
+
+    /**
+     * Export graduated students to PDF.
+     */
+    public function exportPdfLulus(Request $request)
+    {
+        $search = $request->get('search');
+        $tahunLulus = $request->get('tahun_lulus');
+        $jenisKelamin = $request->get('jenis_kelamin');
+
+        $siswaList = Siswa::lulus()
+            ->when($search, function ($q, $search) {
+                return $q->where(function ($sub) use ($search) {
+                    $sub->where('nisn', 'like', "%{$search}%")
+                        ->orWhere('nama_siswa', 'like', "%{$search}%")
+                        ->orWhere('alamat', 'like', "%{$search}%");
+                });
+            })
+            ->when($tahunLulus, function ($q, $tahunLulus) {
+                return $q->where('tahun_lulus', $tahunLulus);
+            })
+            ->when($jenisKelamin, function ($q, $jenisKelamin) {
+                return $q->where('jenis_kelamin', $jenisKelamin);
+            })
+            ->orderBy('tahun_lulus', 'desc')
+            ->orderBy('nama_siswa', 'asc')
+            ->get();
+
+        $pdf = Pdf::loadView('admin.siswa.lulus_pdf', compact(
+            'siswaList',
+            'search',
+            'tahunLulus',
+            'jenisKelamin'
+        ))->setPaper('a4', 'portrait');
+
+        $filename = 'Daftar_Siswa_Lulus' . ($tahunLulus ? '_' . $tahunLulus : '') . '.pdf';
+
+        return $pdf->download($filename);
     }
 }
