@@ -15,9 +15,28 @@ class NilaiEkstrakurikulerController extends Controller
 {
     public function index(Request $request)
     {
-        $filterTA = $request->get('tahun_ajaran');
-        $filterSemester = $request->get('semester');
+        $activeTA = TahunAjaran::where('is_active', true)->first();
+        $activeSemester = null;
+        if ($activeTA) {
+            $activeSemester = Semester::where('id_ta', $activeTA->id_ta)->where('is_active', true)->first()
+                ?? Semester::where('id_ta', $activeTA->id_ta)->first();
+        }
+        if (!$activeSemester) {
+            $activeSemester = Semester::where('is_active', true)->first() ?? Semester::first();
+        }
+
+        $filterTA = $request->has('tahun_ajaran') ? $request->get('tahun_ajaran') : ($activeTA?->id_ta ?? null);
+        $filterSemester = $request->has('semester') ? $request->get('semester') : ($activeSemester?->id_semester ?? null);
         $filterKelas = $request->get('kelas');
+
+        if ($filterTA && $filterSemester) {
+            $semExists = Semester::where('id_semester', $filterSemester)->where('id_ta', $filterTA)->exists();
+            if (!$semExists) {
+                $validSem = Semester::where('id_ta', $filterTA)->where('is_active', true)->first()
+                    ?? Semester::where('id_ta', $filterTA)->first();
+                $filterSemester = $validSem?->id_semester;
+            }
+        }
 
         $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
         $semesterList = Semester::orderBy('id_semester')->get();
@@ -25,14 +44,17 @@ class NilaiEkstrakurikulerController extends Controller
 
         $siswaList = collect();
 
-        if ($filterTA && $filterSemester && $filterKelas) {
-            $siswaList = Siswa::with(['nilaiEkstrakurikuler' => function ($q) use ($filterTA, $filterSemester) {
+        if ($filterTA && $filterSemester) {
+            $siswaQuery = Siswa::with(['kelas', 'nilaiEkstrakurikuler' => function ($q) use ($filterTA, $filterSemester) {
                 $q->where('id_ta', $filterTA)->where('id_semester', $filterSemester);
             }])
-                ->where('id_kelas', $filterKelas)
-                ->where('id_ta', $filterTA)
-                ->orderBy('nama_siswa')
-                ->get();
+                ->where('id_ta', $filterTA);
+
+            if ($filterKelas) {
+                $siswaQuery->where('id_kelas', $filterKelas);
+            }
+
+            $siswaList = $siswaQuery->orderBy('id_kelas')->orderBy('nama_siswa')->get();
         }
 
         return view('admin.nilaiekstrakurikuler.index', compact(
@@ -43,20 +65,40 @@ class NilaiEkstrakurikulerController extends Controller
 
     public function create(Request $request)
     {
+        $activeTA = TahunAjaran::where('is_active', true)->first();
+        $activeSemester = null;
+        if ($activeTA) {
+            $activeSemester = Semester::where('id_ta', $activeTA->id_ta)->where('is_active', true)->first()
+                ?? Semester::where('id_ta', $activeTA->id_ta)->first();
+        }
+        if (!$activeSemester) {
+            $activeSemester = Semester::where('is_active', true)->first() ?? Semester::first();
+        }
+
+        $selectedTA = $request->has('tahun_ajaran') ? $request->get('tahun_ajaran') : ($activeTA?->id_ta ?? null);
+        $selectedSemester = $request->has('semester') ? $request->get('semester') : ($activeSemester?->id_semester ?? null);
+        $selectedKelas = $request->get('kelas');
+
+        if ($selectedTA && $selectedSemester) {
+            $semExists = Semester::where('id_semester', $selectedSemester)->where('id_ta', $selectedTA)->exists();
+            if (!$semExists) {
+                $validSem = Semester::where('id_ta', $selectedTA)->where('is_active', true)->first()
+                    ?? Semester::where('id_ta', $selectedTA)->first();
+                $selectedSemester = $validSem?->id_semester;
+            }
+        }
+
         $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
         $semesterList = Semester::orderBy('id_semester')->get();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         $siswaList = collect();
 
-        $selectedTA = $request->get('tahun_ajaran');
-        $selectedSemester = $request->get('semester');
-        $selectedKelas = $request->get('kelas');
-
-        if ($selectedTA && $selectedKelas) {
-            $siswaList = Siswa::where('id_kelas', $selectedKelas)
-                ->where('id_ta', $selectedTA)
-                ->orderBy('nama_siswa')
-                ->get();
+        if ($selectedTA) {
+            $siswaQuery = Siswa::where('id_ta', $selectedTA);
+            if ($selectedKelas) {
+                $siswaQuery->where('id_kelas', $selectedKelas);
+            }
+            $siswaList = $siswaQuery->orderBy('id_kelas')->orderBy('nama_siswa')->get();
         }
 
         return view('admin.nilaiekstrakurikuler.create', compact(

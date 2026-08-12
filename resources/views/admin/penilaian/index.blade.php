@@ -265,13 +265,13 @@
                 let taOptions = '';
                 @foreach ($tahunAjaranList as $ta)
                     taOptions +=
-                        '<option value="{{ $ta->id_ta }}">{{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}</option>';
+                        '<option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>{{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}</option>';
                 @endforeach
 
                 let semOptions = '';
                 @foreach ($semesterList as $s)
                     semOptions +=
-                        '<option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}">{{ $s->nama_semester }}</option>';
+                        '<option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" {{ $filterSemester == $s->id_semester ? 'selected' : '' }}>{{ $s->nama_semester }}</option>';
                 @endforeach
 
                 Swal.fire({

@@ -54,7 +54,7 @@
                         <div class="col-md-3 mt-3">
                             <label class="form-label">Kelas</label>
                             <select name="kelas" class="form-select">
-                                <option value="">-- Pilih Kelas --</option>
+                                <option value="">Semua Kelas</option>
                                 @foreach ($kelasList as $kelas)
                                     <option value="{{ $kelas->id_kelas }}"
                                         {{ $filterKelas == $kelas->id_kelas ? 'selected' : '' }}>
@@ -71,7 +71,7 @@
             </div>
         </div>
 
-        @if ($filterTA && $filterSemester && $filterKelas && $siswaList->count() > 0 && $mapelList->count() > 0)
+        @if ($filterTA && $filterSemester && $siswaList->count() > 0 && $mapelList->count() > 0)
             <div class="card">
                 <h5 class="card-header">Input Nilai Pengetahuan (C1)</h5>
                 <div class="card-body">
@@ -86,6 +86,7 @@
                                     <tr>
                                         <th>No</th>
                                         <th>Nama Siswa</th>
+                                        <th>Kelas</th>
                                         @foreach ($mapelList as $mapel)
                                             <th class="text-center" style="min-width:80px;">{{ $mapel->kode_mapel }}</th>
                                         @endforeach
@@ -96,6 +97,9 @@
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
                                             <td>{{ $siswa->nama_siswa }}</td>
+                                            <td>
+                                                <span class="badge bg-label-info">{{ $siswa->kelas->nama_kelas ?? '-' }}</span>
+                                            </td>
                                             @foreach ($mapelList as $mapel)
                                                 @php
                                                     $existing = $siswa->nilaiPengetahuan
@@ -122,16 +126,16 @@
                     </form>
                 </div>
             </div>
-        @elseif($filterTA && $filterKelas && $mapelList->count() == 0)
+        @elseif($filterTA && $filterSemester && $mapelList->count() == 0)
             <div class="alert alert-warning">
                 <i class="bx bx-warning me-1"></i>
-                Kelas ini belum memiliki mata pelajaran yang di-assign.
-                <a href="{{ route('admin.kelas.edit', $filterKelas) }}">Atur mata pelajaran</a> terlebih dahulu.
+                Belum ada mata pelajaran yang terdaftar.
+                <a href="{{ route('admin.matapelajaran.index') }}">Atur mata pelajaran</a> terlebih dahulu.
             </div>
-        @elseif($filterTA && $filterKelas)
+        @elseif($filterTA && $filterSemester)
             <div class="alert alert-info">Tidak ada siswa ditemukan untuk filter yang dipilih.</div>
         @else
-            <div class="alert alert-info">Pilih Tahun Ajaran dan Kelas untuk mulai input nilai.</div>
+            <div class="alert alert-info">Pilih Tahun Ajaran dan Semester untuk mulai input nilai.</div>
         @endif
     </div>
 @endsection

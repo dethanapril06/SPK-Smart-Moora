@@ -23,17 +23,27 @@ class NilaiSikapController extends Controller
     public function index(Request $request)
     {
         $kelas = $this->getKelas();
-        $filterTA = $request->get('tahun_ajaran');
-        $filterSemester = $request->get('semester');
 
-        if (!$filterTA) {
-            $activeTA = TahunAjaran::where('is_active', 1)->first();
-            $filterTA = $activeTA ? $activeTA->id_ta : null;
+        $activeTA = TahunAjaran::where('is_active', true)->first();
+        $activeSemester = null;
+        if ($activeTA) {
+            $activeSemester = Semester::where('id_ta', $activeTA->id_ta)->where('is_active', true)->first()
+                ?? Semester::where('id_ta', $activeTA->id_ta)->first();
+        }
+        if (!$activeSemester) {
+            $activeSemester = Semester::where('is_active', true)->first() ?? Semester::first();
         }
 
-        if (!$filterSemester) {
-            $activeSemester = Semester::where('is_active', 1)->first();
-            $filterSemester = $activeSemester ? $activeSemester->id_semester : null;
+        $filterTA = $request->has('tahun_ajaran') ? $request->get('tahun_ajaran') : ($activeTA?->id_ta ?? null);
+        $filterSemester = $request->has('semester') ? $request->get('semester') : ($activeSemester?->id_semester ?? null);
+
+        if ($filterTA && $filterSemester) {
+            $semExists = Semester::where('id_semester', $filterSemester)->where('id_ta', $filterTA)->exists();
+            if (!$semExists) {
+                $validSem = Semester::where('id_ta', $filterTA)->where('is_active', true)->first()
+                    ?? Semester::where('id_ta', $filterTA)->first();
+                $filterSemester = $validSem?->id_semester;
+            }
         }
 
         $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();

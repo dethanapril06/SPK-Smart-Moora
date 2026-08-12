@@ -9,10 +9,10 @@
                     <li class="breadcrumb-item active">Input Nilai Ekstrakurikuler</li>
                 </ol>
             </nav>
-            @if ($filterTA && $filterSemester && $filterKelas)
+            @if ($filterTA && $filterSemester)
                 <a href="{{ route('admin.nilaiekstrakurikuler.create', ['tahun_ajaran' => $filterTA, 'semester' => $filterSemester, 'kelas' => $filterKelas]) }}"
                     class="btn btn-sm btn-primary">
-                    <i class="bx bx-plus me-1"></i>
+                    <i class="bx bx-plus me-1"></i> Tambah Nilai Ekskul
                 </a>
             @endif
         </div>
@@ -60,7 +60,7 @@
                         <div class="col-md-3 mt-3">
                             <label class="form-label">Kelas</label>
                             <select name="kelas" class="form-select">
-                                <option value="">-- Pilih Kelas --</option>
+                                <option value="">Semua Kelas</option>
                                 @foreach ($kelasList as $kelas)
                                     <option value="{{ $kelas->id_kelas }}"
                                         {{ $filterKelas == $kelas->id_kelas ? 'selected' : '' }}>
@@ -77,7 +77,7 @@
             </div>
         </div>
 
-        @if ($filterTA && $filterSemester && $filterKelas && $siswaList->count() > 0)
+        @if ($filterTA && $filterSemester && $siswaList->count() > 0)
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">Data Nilai Ekstrakurikuler</h5>
@@ -88,6 +88,7 @@
                             <tr>
                                 <th style="width: 50px;">No</th>
                                 <th>Nama Siswa</th>
+                                <th>Kelas</th>
                                 <th>NISN</th>
                                 <th>Ekstrakurikuler</th>
                                 <th>Predikat</th>
@@ -99,6 +100,9 @@
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $siswa->nama_siswa }}</td>
+                                    <td>
+                                        <span class="badge bg-label-info">{{ $siswa->kelas->nama_kelas ?? '-' }}</span>
+                                    </td>
                                     <td>{{ $siswa->nisn }}</td>
                                     <td>
                                         @forelse($siswa->nilaiEkstrakurikuler as $idx => $ekskul)
@@ -131,6 +135,7 @@
                                             <a href="{{ route('admin.nilaiekstrakurikuler.edit', [
                                                 'id' => $siswa->id_siswa,
                                                 'tahun_ajaran' => $filterTA,
+                                                'semester' => $filterSemester,
                                             ]) }}"
                                                 class="btn btn-sm btn-icon btn-label-warning"
                                                 title="Kelola ekstrakurikuler {{ $siswa->nama_siswa }}">
@@ -146,10 +151,10 @@
                     </table>
                 </div>
             </div>
-        @elseif($filterTA && $filterKelas)
+        @elseif($filterTA && $filterSemester)
             <div class="alert alert-info">Tidak ada siswa ditemukan untuk filter yang dipilih.</div>
         @else
-            <div class="alert alert-info">Pilih Tahun Ajaran dan Kelas untuk mulai input nilai.</div>
+            <div class="alert alert-info">Pilih Tahun Ajaran dan Semester untuk mulai input nilai.</div>
         @endif
     </div>
 @endsection

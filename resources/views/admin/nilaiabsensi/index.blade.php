@@ -54,7 +54,7 @@
                         <div class="col-md-3 mt-3">
                             <label class="form-label">Kelas</label>
                             <select name="kelas" class="form-select">
-                                <option value="">-- Pilih Kelas --</option>
+                                <option value="">Semua Kelas</option>
                                 @foreach ($kelasList as $kelas)
                                     <option value="{{ $kelas->id_kelas }}"
                                         {{ $filterKelas == $kelas->id_kelas ? 'selected' : '' }}>
@@ -71,7 +71,7 @@
             </div>
         </div>
 
-        @if ($filterTA && $filterSemester && $filterKelas && $siswaList->count() > 0)
+        @if ($filterTA && $filterSemester && $siswaList->count() > 0)
             <div class="card">
                 <h5 class="card-header">Input Data Absensi (C6)</h5>
                 <div class="card-body">
@@ -86,6 +86,7 @@
                                     <tr>
                                         <th>No</th>
                                         <th>Nama Siswa</th>
+                                        <th>Kelas</th>
                                         <th class="text-center">Sakit</th>
                                         <th class="text-center">Izin</th>
                                         <th class="text-center">Alpa</th>
@@ -100,6 +101,9 @@
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
                                             <td>{{ $siswa->nama_siswa }}</td>
+                                            <td>
+                                                <span class="badge bg-label-info">{{ $siswa->kelas->nama_kelas ?? '-' }}</span>
+                                            </td>
                                             <td>
                                                 <input type="number"
                                                     class="form-control form-control-sm text-center absensi-input"
@@ -139,10 +143,10 @@
                     </form>
                 </div>
             </div>
-        @elseif($filterTA && $filterKelas)
+        @elseif($filterTA && $filterSemester)
             <div class="alert alert-info">Tidak ada siswa ditemukan untuk filter yang dipilih.</div>
         @else
-            <div class="alert alert-info">Pilih Tahun Ajaran dan Kelas untuk mulai input data.</div>
+            <div class="alert alert-info">Pilih Tahun Ajaran dan Semester untuk mulai input data.</div>
         @endif
     </div>
 
