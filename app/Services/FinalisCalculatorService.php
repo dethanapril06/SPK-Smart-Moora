@@ -194,20 +194,6 @@ class FinalisCalculatorService
 
     protected function resolveTingkatKelas(string $namaKelas): ?string
     {
-        $normalized = strtoupper($namaKelas);
-
-        if (preg_match('/(^|[^A-Z0-9])XII([^A-Z0-9]|$)/', $normalized)) {
-            return 'XII';
-        }
-
-        if (preg_match('/(^|[^A-Z0-9])XI([^A-Z0-9]|$)/', $normalized)) {
-            return 'XI';
-        }
-
-        if (preg_match('/(^|[^A-Z0-9])X([^A-Z0-9]|$)/', $normalized)) {
-            return 'X';
-        }
-
-        return null;
+        return Kelas::resolveTingkat($namaKelas);
     }
 }

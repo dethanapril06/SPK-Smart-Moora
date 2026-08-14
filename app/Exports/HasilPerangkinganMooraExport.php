@@ -49,7 +49,10 @@ class HasilPerangkinganMooraExport implements FromCollection, WithHeadings, With
                 $sq->where('id_kelas', $this->filterKelas)
             ))
             ->get()
-            ->sortBy('rank_moora')
+            ->sortBy([
+                fn($a, $b) => strcmp($a->siswa->kelas->nama_kelas ?? '', $b->siswa->kelas->nama_kelas ?? ''),
+                fn($a, $b) => ($a->rank_moora ?? 9999) <=> ($b->rank_moora ?? 9999)
+            ])
             ->values();
 
         $this->rowCount = $data->count();

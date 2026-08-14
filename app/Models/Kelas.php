@@ -36,4 +36,38 @@ class Kelas extends Model
         return $this->belongsToMany(MataPelajaran::class, 'tb_kelas_mata_pelajaran', 'id_kelas', 'id_mapel')
                     ->withTimestamps();
     }
+
+    /**
+     * Get Tingkat / Angkatan (X, XI, XII) from nama_kelas
+     */
+    public function getTingkatAttribute(): ?string
+    {
+        return self::resolveTingkat($this->nama_kelas);
+    }
+
+    /**
+     * Resolve Tingkat from string class name
+     */
+    public static function resolveTingkat(?string $namaKelas): ?string
+    {
+        if (!$namaKelas) {
+            return null;
+        }
+
+        $normalized = strtoupper($namaKelas);
+
+        if (preg_match('/(^|[^A-Z0-9])XII([^A-Z0-9]|$)/', $normalized)) {
+            return 'XII';
+        }
+
+        if (preg_match('/(^|[^A-Z0-9])XI([^A-Z0-9]|$)/', $normalized)) {
+            return 'XI';
+        }
+
+        if (preg_match('/(^|[^A-Z0-9])X([^A-Z0-9]|$)/', $normalized)) {
+            return 'X';
+        }
+
+        return null;
+    }
 }

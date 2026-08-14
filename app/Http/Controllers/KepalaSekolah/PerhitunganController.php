@@ -43,11 +43,14 @@ class PerhitunganController extends Controller
                         ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
                             $sq->where('id_kelas', $filterKelas)
                         ))
+                        ->join('tb_siswa', 'tb_hasil_akhir.id_siswa', '=', 'tb_siswa.id_siswa')
+                        ->orderBy('tb_siswa.id_kelas')
                         ->orderBy('rank_smart')
+                        ->select('tb_hasil_akhir.*')
                         ->paginate(10)
                         ->withQueryString();
                 }
-                $sourceName = 'Admin (Semua Siswa)';
+                $sourceName = 'Admin (Per Kelas)';
             } else {
                 $waliKelas = User::where('level', 'Wali Kelas')->find($source);
                 if ($waliKelas) {
@@ -110,11 +113,14 @@ class PerhitunganController extends Controller
                         ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($sq) =>
                             $sq->where('id_kelas', $filterKelas)
                         ))
+                        ->join('tb_siswa', 'tb_hasil_akhir.id_siswa', '=', 'tb_siswa.id_siswa')
+                        ->orderBy('tb_siswa.id_kelas')
                         ->orderBy('rank_moora')
+                        ->select('tb_hasil_akhir.*')
                         ->paginate(10)
                         ->withQueryString();
                 }
-                $sourceName = 'Admin (Semua Siswa)';
+                $sourceName = 'Admin (Per Kelas)';
             } else {
                 $waliKelas = User::where('level', 'Wali Kelas')->find($source);
                 if ($waliKelas) {
@@ -245,7 +251,7 @@ class PerhitunganController extends Controller
                 ->whereNotNull($rankCol)
                 ->exists();
             if ($exists) {
-                $sources[] = ['value' => 'admin', 'label' => 'Admin (Semua Siswa)'];
+                $sources[] = ['value' => 'admin', 'label' => 'Admin (Seluruh Kelas)'];
             }
         }
 
@@ -278,7 +284,7 @@ class PerhitunganController extends Controller
 
     protected function resolveSourceName($source): string
     {
-        if ($source === 'admin') return 'Admin (Semua Siswa)';
+        if ($source === 'admin') return 'Admin (Seluruh Kelas)';
 
         $user = User::find($source);
         if ($user) {

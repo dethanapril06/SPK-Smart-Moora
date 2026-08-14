@@ -54,7 +54,6 @@ class PerhitunganController extends Controller
 
         return $kelasInput;
     }
-    
 
     // =========================================================================
     // SMART Standalone
@@ -79,11 +78,29 @@ class PerhitunganController extends Controller
             ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($q2) => $q2->whereIn('id_kelas', $filterKelas)));
 
-        $hasilList       = $hasilQuery->orderBy('rank_smart')->paginate(10)->withQueryString();
+        $allHasil = $hasilQuery->get()->sortBy([
+            fn($a, $b) => strcmp($a->siswa->kelas->nama_kelas ?? '', $b->siswa->kelas->nama_kelas ?? ''),
+            fn($a, $b) => ($a->rank_smart ?? 9999) <=> ($b->rank_smart ?? 9999)
+        ])->values();
+
+        $hasilByTingkat = [];
+        foreach (['X', 'XI', 'XII'] as $tingkat) {
+            $tingkatHasil = $allHasil->filter(fn($item) => ($item->siswa->kelas->tingkat ?? null) === $tingkat)->values();
+            $byKelas = $tingkatHasil->groupBy(fn($item) => $item->siswa->kelas->nama_kelas ?? 'Tanpa Kelas');
+            
+            $hasilByTingkat[$tingkat] = [
+                'tingkat'     => $tingkat,
+                'total_siswa' => $tingkatHasil->count(),
+                'total_kelas' => $byKelas->count(),
+                'by_kelas'    => $byKelas,
+                'all'         => $tingkatHasil,
+            ];
+        }
+
         $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
         $semesterList    = Semester::orderBy('id_semester')->get();
         $kelasList       = Kelas::orderBy('nama_kelas')->get();
-        $hasCalculation  = $filterTA && $hasilList->total() > 0;
+        $hasCalculation  = $filterTA && $allHasil->isNotEmpty();
 
         $studentsWithCompletePenilaian = 0;
         if ($filterTA) {
@@ -98,7 +115,7 @@ class PerhitunganController extends Controller
         }
 
         return view('admin.perhitungan.smart.index', compact(
-            'hasilList', 'tahunAjaranList', 'semesterList', 'kelasList',
+            'allHasil', 'hasilByTingkat', 'tahunAjaranList', 'semesterList', 'kelasList',
             'filterTA', 'filterSemester', 'filterKelas', 'allKelasSelected',
             'hasCalculation', 'studentsWithCompletePenilaian'
         ));
@@ -128,26 +145,11 @@ class PerhitunganController extends Controller
         $kelasIds    = array_values(array_unique($kelasIds));
         $kriteriaCount = Kriteria::count();
         $allSelectedSiswaIds = Siswa::whereIn('id_kelas', $kelasIds)->pluck('id_siswa')->all();
-
-        $siswaQuery = Penilaian::select('id_siswa')
-            ->where('id_ta', $id_ta)
-            ->where('id_semester', $id_semester)
-            ->whereHas('siswa', fn($q) => $q->whereIn('id_kelas', $kelasIds))
-            ->groupBy('id_siswa')
-            ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount]);
-
-        $totalSiswa = $siswaQuery->count();
-        $siswaIds   = $siswaQuery->pluck('id_siswa')->all();
-
-        if ($totalSiswa < 2) {
-            return redirect()->back()->with('error', 'Minimal 2 siswa dengan penilaian lengkap diperlukan.');
-        }
+        $userId = auth()->id();
 
         DB::beginTransaction();
         try {
-            $smartResults = $this->smartCalculator->calculate($id_ta, $siswaIds, $id_semester);
-            $userId = auth()->id();
-
+            // Reset previous SMART score & rank for selected classes
             HasilAkhir::where('id_ta', $id_ta)
                 ->where('id_semester', $id_semester)
                 ->where('user_id', $userId)
@@ -157,25 +159,54 @@ class PerhitunganController extends Controller
                     'rank_smart' => null,
                 ]);
 
-            foreach ($smartResults as $smart) {
-                HasilAkhir::updateOrCreate(
-                    [
-                        'id_siswa' => $smart['id_siswa'],
-                        'id_ta' => $id_ta,
-                        'id_semester' => $id_semester,
-                        'user_id' => $userId,
-                    ],
-                    [
-                        'skor_smart' => $smart['skor_smart'],
-                        'rank_smart' => $smart['rank_smart'],
-                    ]
-                );
+            $totalCalculatedSiswa = 0;
+            $totalCalculatedKelas = 0;
+
+            // Execute calculation class by class
+            foreach ($kelasIds as $kelasId) {
+                $siswaClassIds = Penilaian::select('id_siswa')
+                    ->where('id_ta', $id_ta)
+                    ->where('id_semester', $id_semester)
+                    ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId))
+                    ->groupBy('id_siswa')
+                    ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
+                    ->pluck('id_siswa')
+                    ->all();
+
+                if (count($siswaClassIds) < 1) {
+                    continue;
+                }
+
+                $smartResults = $this->smartCalculator->calculate($id_ta, $siswaClassIds, $id_semester);
+
+                foreach ($smartResults as $smart) {
+                    HasilAkhir::updateOrCreate(
+                        [
+                            'id_siswa'    => $smart['id_siswa'],
+                            'id_ta'       => $id_ta,
+                            'id_semester' => $id_semester,
+                            'user_id'     => $userId,
+                        ],
+                        [
+                            'skor_smart' => $smart['skor_smart'],
+                            'rank_smart' => $smart['rank_smart'],
+                        ]
+                    );
+                }
+
+                $totalCalculatedSiswa += count($smartResults);
+                $totalCalculatedKelas++;
+            }
+
+            if ($totalCalculatedSiswa < 1) {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Tidak ada siswa dengan penilaian lengkap di kelas terpilih.');
             }
 
             DB::commit();
             return redirect()->route('admin.perhitungan.smart.index', [
                 'tahun_ajaran' => $id_ta, 'semester' => $id_semester, 'kelas' => $kelasIds,
-            ])->with('success', "Perhitungan SMART berhasil! {$totalSiswa} siswa dari " . count($kelasIds) . " kelas telah di-ranking.");
+            ])->with('success', "Perhitungan SMART berhasil! {$totalCalculatedSiswa} siswa dari {$totalCalculatedKelas} kelas telah di-ranking berdasarkan masing-masing kelas.");
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
@@ -188,21 +219,37 @@ class PerhitunganController extends Controller
         $id_semester      = $request->get('semester');
         $tahunAjaran      = TahunAjaran::findOrFail($id_ta);
         $kriteriaList     = Kriteria::orderBy('kode_kriteria')->get();
+        $kriteriaCount    = $kriteriaList->count();
 
-        $siswaIds = null;
-        if (!empty($selectedKelasIds)) {
-            $kriteriaCount = Kriteria::count();
+        // Get classes that have penilaian
+        $eligibleKelasList = Kelas::whereHas('siswa.penilaian', function ($q) use ($id_ta, $id_semester) {
+            $q->where('id_ta', $id_ta)
+              ->when($id_semester, fn($sq) => $sq->where('id_semester', $id_semester));
+        })->orderBy('nama_kelas')->get();
+
+        $activeKelasId = $request->get('id_kelas');
+        if (!$activeKelasId || !$eligibleKelasList->contains('id_kelas', $activeKelasId)) {
+            $activeKelasId = !empty($selectedKelasIds) ? $selectedKelasIds[0] : ($eligibleKelasList->first()?->id_kelas);
+        }
+
+        $activeKelas = Kelas::find($activeKelasId);
+        $detailedSteps = [];
+
+        if ($activeKelasId) {
             $siswaIds = Penilaian::select('id_siswa')
                 ->where('id_ta', $id_ta)
                 ->when($id_semester, fn($q, $s) => $q->where('id_semester', $s))
-                ->whereHas('siswa', fn($q) => $q->whereIn('id_kelas', $selectedKelasIds))
+                ->whereHas('siswa', fn($q) => $q->where('id_kelas', $activeKelasId))
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
                 ->pluck('id_siswa')->all();
+
+            if (!empty($siswaIds)) {
+                $this->smartCalculator->calculate($id_ta, $siswaIds, $id_semester);
+                $detailedSteps = $this->smartCalculator->getDetailedSteps();
+            }
         }
 
-        $this->smartCalculator->calculate($id_ta, $siswaIds, $id_semester);
-        $detailedSteps   = $this->smartCalculator->getDetailedSteps();
         $perPage         = 10;
         $stepsCollection = collect($detailedSteps)->values();
 
@@ -222,7 +269,8 @@ class PerhitunganController extends Controller
 
         return view('admin.perhitungan.smart.steps', compact(
             'tahunAjaran', 'kriteriaList',
-            'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'selectedKelasIds', 'id_semester'
+            'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps',
+            'selectedKelasIds', 'id_semester', 'eligibleKelasList', 'activeKelasId', 'activeKelas'
         ));
     }
 
@@ -249,11 +297,29 @@ class PerhitunganController extends Controller
             ->when($filterSemester, fn($q, $s) => $q->where('id_semester', $s))
             ->when($filterKelas, fn($q) => $q->whereHas('siswa', fn($q2) => $q2->whereIn('id_kelas', $filterKelas)));
 
-        $hasilList       = $hasilQuery->orderBy('rank_moora')->paginate(10)->withQueryString();
+        $allHasil = $hasilQuery->get()->sortBy([
+            fn($a, $b) => strcmp($a->siswa->kelas->nama_kelas ?? '', $b->siswa->kelas->nama_kelas ?? ''),
+            fn($a, $b) => ($a->rank_moora ?? 9999) <=> ($b->rank_moora ?? 9999)
+        ])->values();
+
+        $hasilByTingkat = [];
+        foreach (['X', 'XI', 'XII'] as $tingkat) {
+            $tingkatHasil = $allHasil->filter(fn($item) => ($item->siswa->kelas->tingkat ?? null) === $tingkat)->values();
+            $byKelas = $tingkatHasil->groupBy(fn($item) => $item->siswa->kelas->nama_kelas ?? 'Tanpa Kelas');
+            
+            $hasilByTingkat[$tingkat] = [
+                'tingkat'     => $tingkat,
+                'total_siswa' => $tingkatHasil->count(),
+                'total_kelas' => $byKelas->count(),
+                'by_kelas'    => $byKelas,
+                'all'         => $tingkatHasil,
+            ];
+        }
+
         $tahunAjaranList = TahunAjaran::representatives()->orderBy('tahun_ajaran', 'desc')->get();
         $semesterList    = Semester::orderBy('id_semester')->get();
         $kelasList       = Kelas::orderBy('nama_kelas')->get();
-        $hasCalculation  = $filterTA && $hasilList->total() > 0;
+        $hasCalculation  = $filterTA && $allHasil->isNotEmpty();
 
         $studentsWithCompletePenilaian = 0;
         if ($filterTA) {
@@ -268,7 +334,7 @@ class PerhitunganController extends Controller
         }
 
         return view('admin.perhitungan.moora.index', compact(
-            'hasilList', 'tahunAjaranList', 'semesterList', 'kelasList',
+            'allHasil', 'hasilByTingkat', 'tahunAjaranList', 'semesterList', 'kelasList',
             'filterTA', 'filterSemester', 'filterKelas', 'allKelasSelected',
             'hasCalculation', 'studentsWithCompletePenilaian'
         ));
@@ -298,26 +364,11 @@ class PerhitunganController extends Controller
         $kelasIds    = array_values(array_unique($kelasIds));
         $kriteriaCount = Kriteria::count();
         $allSelectedSiswaIds = Siswa::whereIn('id_kelas', $kelasIds)->pluck('id_siswa')->all();
-
-        $siswaQuery = Penilaian::select('id_siswa')
-            ->where('id_ta', $id_ta)
-            ->where('id_semester', $id_semester)
-            ->whereHas('siswa', fn($q) => $q->whereIn('id_kelas', $kelasIds))
-            ->groupBy('id_siswa')
-            ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount]);
-
-        $totalSiswa = $siswaQuery->count();
-        $siswaIds   = $siswaQuery->pluck('id_siswa')->all();
-
-        if ($totalSiswa < 2) {
-            return redirect()->back()->with('error', 'Minimal 2 siswa dengan penilaian lengkap diperlukan.');
-        }
+        $userId = auth()->id();
 
         DB::beginTransaction();
         try {
-            $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaIds, $id_semester);
-            $userId = auth()->id();
-
+            // Reset previous MOORA score & rank for selected classes
             HasilAkhir::where('id_ta', $id_ta)
                 ->where('id_semester', $id_semester)
                 ->where('user_id', $userId)
@@ -327,25 +378,54 @@ class PerhitunganController extends Controller
                     'rank_moora' => null,
                 ]);
 
-            foreach ($mooraResults as $moora) {
-                HasilAkhir::updateOrCreate(
-                    [
-                        'id_siswa' => $moora['id_siswa'],
-                        'id_ta' => $id_ta,
-                        'id_semester' => $id_semester,
-                        'user_id' => $userId,
-                    ],
-                    [
-                        'skor_moora' => $moora['skor_moora'],
-                        'rank_moora' => $moora['rank_moora'],
-                    ]
-                );
+            $totalCalculatedSiswa = 0;
+            $totalCalculatedKelas = 0;
+
+            // Execute calculation class by class
+            foreach ($kelasIds as $kelasId) {
+                $siswaClassIds = Penilaian::select('id_siswa')
+                    ->where('id_ta', $id_ta)
+                    ->where('id_semester', $id_semester)
+                    ->whereHas('siswa', fn($q) => $q->where('id_kelas', $kelasId))
+                    ->groupBy('id_siswa')
+                    ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
+                    ->pluck('id_siswa')
+                    ->all();
+
+                if (count($siswaClassIds) < 1) {
+                    continue;
+                }
+
+                $mooraResults = $this->mooraCalculator->calculate($id_ta, $siswaClassIds, $id_semester);
+
+                foreach ($mooraResults as $moora) {
+                    HasilAkhir::updateOrCreate(
+                        [
+                            'id_siswa'    => $moora['id_siswa'],
+                            'id_ta'       => $id_ta,
+                            'id_semester' => $id_semester,
+                            'user_id'     => $userId,
+                        ],
+                        [
+                            'skor_moora' => $moora['skor_moora'],
+                            'rank_moora' => $moora['rank_moora'],
+                        ]
+                    );
+                }
+
+                $totalCalculatedSiswa += count($mooraResults);
+                $totalCalculatedKelas++;
+            }
+
+            if ($totalCalculatedSiswa < 1) {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Tidak ada siswa dengan penilaian lengkap di kelas terpilih.');
             }
 
             DB::commit();
             return redirect()->route('admin.perhitungan.moora.index', [
                 'tahun_ajaran' => $id_ta, 'semester' => $id_semester, 'kelas' => $kelasIds,
-            ])->with('success', "Perhitungan MOORA berhasil! {$totalSiswa} siswa dari " . count($kelasIds) . " kelas telah di-ranking.");
+            ])->with('success', "Perhitungan MOORA berhasil! {$totalCalculatedSiswa} siswa dari {$totalCalculatedKelas} kelas telah di-ranking berdasarkan masing-masing kelas.");
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
@@ -358,21 +438,37 @@ class PerhitunganController extends Controller
         $id_semester      = $request->get('semester');
         $tahunAjaran      = TahunAjaran::findOrFail($id_ta);
         $kriteriaList     = Kriteria::orderBy('kode_kriteria')->get();
+        $kriteriaCount    = $kriteriaList->count();
 
-        $siswaIds = null;
-        if (!empty($selectedKelasIds)) {
-            $kriteriaCount = Kriteria::count();
+        // Get classes that have penilaian
+        $eligibleKelasList = Kelas::whereHas('siswa.penilaian', function ($q) use ($id_ta, $id_semester) {
+            $q->where('id_ta', $id_ta)
+              ->when($id_semester, fn($sq) => $sq->where('id_semester', $id_semester));
+        })->orderBy('nama_kelas')->get();
+
+        $activeKelasId = $request->get('id_kelas');
+        if (!$activeKelasId || !$eligibleKelasList->contains('id_kelas', $activeKelasId)) {
+            $activeKelasId = !empty($selectedKelasIds) ? $selectedKelasIds[0] : ($eligibleKelasList->first()?->id_kelas);
+        }
+
+        $activeKelas = Kelas::find($activeKelasId);
+        $detailedSteps = [];
+
+        if ($activeKelasId) {
             $siswaIds = Penilaian::select('id_siswa')
                 ->where('id_ta', $id_ta)
                 ->when($id_semester, fn($q, $s) => $q->where('id_semester', $s))
-                ->whereHas('siswa', fn($q) => $q->whereIn('id_kelas', $selectedKelasIds))
+                ->whereHas('siswa', fn($q) => $q->where('id_kelas', $activeKelasId))
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
                 ->pluck('id_siswa')->all();
+
+            if (!empty($siswaIds)) {
+                $this->mooraCalculator->calculate($id_ta, $siswaIds, $id_semester);
+                $detailedSteps = $this->mooraCalculator->getDetailedSteps();
+            }
         }
 
-        $this->mooraCalculator->calculate($id_ta, $siswaIds, $id_semester);
-        $detailedSteps   = $this->mooraCalculator->getDetailedSteps();
         $perPage         = 10;
         $stepsCollection = collect($detailedSteps)->values();
 
@@ -392,7 +488,8 @@ class PerhitunganController extends Controller
 
         return view('admin.perhitungan.moora.steps', compact(
             'tahunAjaran', 'kriteriaList',
-            'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps', 'selectedKelasIds', 'id_semester'
+            'step1Steps', 'step2Steps', 'step3Steps', 'step4Steps',
+            'selectedKelasIds', 'id_semester', 'eligibleKelasList', 'activeKelasId', 'activeKelas'
         ));
     }
 
@@ -482,7 +579,7 @@ class PerhitunganController extends Controller
 
             return redirect()
                 ->route("admin.perhitungan.finalis.{$method}.index", ['tahun_ajaran' => $validated['id_ta'], 'semester' => $validated['id_semester']])
-                ->with('success', 'Perhitungan 10 Besar ' . strtoupper($method) . " berhasil! {$summary['candidate_count']} kandidat dari 3 besar tiap kelas telah dihitung ulang.");
+                ->with('success', 'Perhitungan 10 Besar ' . strtoupper($method) . " berhasil! {$summary['candidate_count']} kandidat dari 3 besar tiap kelas telah dihitung ulang per angkatan.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghitung 10 Besar ' . strtoupper($method) . ': ' . $e->getMessage());
         }

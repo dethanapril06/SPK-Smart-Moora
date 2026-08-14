@@ -67,8 +67,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block mt-1">Pilih "Semua Kelas" untuk menghitung seluruh kelas,
-                                atau pilih beberapa kelas secara manual.</small>
+                            <small class="text-muted d-block mt-1">Perhitungan SMART dijalankan per kelas (X.1, X.2, dst.).</small>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">&nbsp;</label>
@@ -83,14 +82,17 @@
 
                 @if ($filterTA)
                     <hr class="my-3">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
-                            <small class="text-muted">
+                            <small class="text-muted d-block">
                                 <i class="bx bx-info-circle"></i>
                                 <strong>{{ $studentsWithCompletePenilaian }}</strong> siswa dengan penilaian lengkap
                                 @if (!empty($filterKelas))
                                     pada <strong>{{ count($filterKelas) }}</strong> kelas terpilih
                                 @endif
+                            </small>
+                            <small class="text-muted">
+                                Perhitungan SMART dihitung mandiri per masing-masing kelas (Peringkat 1..N di setiap kelas).
                             </small>
                         </div>
                         <div class="btn-group" role="group">
@@ -103,7 +105,7 @@
                             @else
                                 <button type="button" class="btn btn-success btn-sm"
                                     onclick="document.getElementById('calculate-form').submit();"
-                                    {{ $studentsWithCompletePenilaian < 2 || empty($filterKelas) ? 'disabled' : '' }}>
+                                    {{ $studentsWithCompletePenilaian < 1 || empty($filterKelas) ? 'disabled' : '' }}>
                                     <i class="bx bx-calculator"></i> Hitung Sekarang
                                 </button>
                             @endif
@@ -117,11 +119,11 @@
                         </div>
                     @endif
 
-                    @if (!$hasCalculation && $studentsWithCompletePenilaian < 2)
+                    @if (!$hasCalculation && $studentsWithCompletePenilaian < 1)
                         <div class="alert alert-info mt-3 mb-0" role="alert">
                             <i class="bx bx-bulb me-1"></i>
-                            Tombol <strong>"Hitung Sekarang"</strong> belum aktif karena belum ada cukup data penilaian.
-                            Silakan lakukan <strong>Agregasi Nilai Rapor</strong> terlebih dahulu di menu
+                            Tombol <strong>"Hitung Sekarang"</strong> belum aktif karena belum ada data penilaian lengkap.
+                            Silakan lakukan penilaian di menu
                             <a href="{{ route('admin.penilaian.index') }}" class="alert-link">Penilaian Siswa</a>.
                         </div>
                     @endif
@@ -148,129 +150,151 @@
             </div>
         </div>
 
-        {{-- Results Table --}}
+        {{-- Results Organized by Angkatan Tabs --}}
         @if ($hasCalculation)
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5>Hasil Ranking SMART</h5>
+            @php
+                $tingkatTabs = [
+                    'X'   => ['label' => 'Kelas X', 'icon' => 'bx-book-reader', 'data' => $hasilByTingkat['X']],
+                    'XI'  => ['label' => 'Kelas XI', 'icon' => 'bx-book-reader', 'data' => $hasilByTingkat['XI']],
+                    'XII' => ['label' => 'Kelas XII', 'icon' => 'bx-book-reader', 'data' => $hasilByTingkat['XII']],
+                ];
+            @endphp
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 pb-2">
                     <div>
+                        <h5 class="mb-1">Hasil Perangkingan SMART (Per Angkatan &amp; Per Kelas)</h5>
+                        <small class="text-muted">Pilih tab angkatan di bawah untuk melihat hasil ranking masing-masing kelas (X.1, X.2, dst.). 3 besar dari setiap kelas berhak maju ke Finalis 10 Besar.</small>
+                    </div>
+                    <div class="d-flex gap-2">
                         <a href="{{ route('admin.perhitungan.smart.steps', ['id_ta' => $filterTA, 'semester' => $filterSemester, 'kelas' => $filterKelas]) }}"
-                            class="btn btn-sm btn-primary">
-                            <i class="bx bx-detail"></i> Langkah SMART
+                            class="btn btn-sm btn-outline-primary">
+                            <i class="bx bx-detail"></i> Langkah Perhitungan
                         </a>
-                        <a href="{{ route('admin.perhitungan.finalis.smart.index', ['tahun_ajaran' => $filterTA, 'semester' => $filterSemester]) }}" class="btn btn-sm btn-secondary">
-                            <i class="tf-icons bx bx-medal"></i> 10 Besar SMART
+                        <a href="{{ route('admin.perhitungan.finalis.smart.index', ['tahun_ajaran' => $filterTA, 'semester' => $filterSemester]) }}" class="btn btn-sm btn-primary">
+                            <i class="tf-icons bx bx-trophy"></i> 10 Besar SMART (Finalis)
                         </a>
                     </div>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="text-center">No</th>
-                                <th>NISN / Nama Siswa</th>
-                                <th class="text-center">Kelas</th>
-                                <th class="text-center bg-label-primary">Skor SMART</th>
-                                <th class="text-center bg-label-primary">Rank</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($hasilList as $item)
-                                <tr>
-                                    <td class="text-center">
-                                        {{ ($hasilList->currentPage() - 1) * $hasilList->perPage() + $loop->iteration }}
-                                    </td>
-                                    <td>
-                                        <strong>{{ $item->siswa->nisn }}</strong><br>
-                                        <small>{{ $item->siswa->nama_siswa }}</small>
-                                    </td>
-                                    <td class="text-center">
-                                        @if ($item->siswa->kelas)
-                                            <span class="badge bg-label-info">{{ $item->siswa->kelas->nama_kelas }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        <strong class="text-primary">{{ number_format($item->skor_smart, 4) }}</strong>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-label-dark">{{ $item->rank_smart }}</span>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center">Belum ada data perhitungan SMART</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
 
-                @if ($hasilList->count() > 0 && $hasilList->hasPages())
-                    <div class="card-footer">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="text-muted">
-                                Menampilkan {{ $hasilList->firstItem() }} - {{ $hasilList->lastItem() }} dari
-                                {{ $hasilList->total() }} data
+                <div class="nav-align-top">
+                    <ul class="nav nav-tabs" role="tablist">
+                        @foreach ($tingkatTabs as $tingkatKey => $tab)
+                            <li class="nav-item" role="presentation">
+                                <button type="button"
+                                    class="nav-link {{ $loop->first ? 'active' : '' }}"
+                                    role="tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#tab-angkatan-{{ $tingkatKey }}"
+                                    aria-controls="tab-angkatan-{{ $tingkatKey }}"
+                                    aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                                    <i class="bx {{ $tab['icon'] }} me-1"></i> {{ $tab['label'] }}
+                                    <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-primary ms-1">
+                                        {{ $tab['data']['total_siswa'] }}
+                                    </span>
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+
+                    <div class="tab-content p-3">
+                        @foreach ($tingkatTabs as $tingkatKey => $tab)
+                            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
+                                id="tab-angkatan-{{ $tingkatKey }}"
+                                role="tabpanel">
+
+                                @if ($tab['data']['total_siswa'] > 0)
+                                    <div class="alert alert-light border mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div>
+                                            <i class="bx bx-info-circle text-primary me-1"></i>
+                                            Angkatan <strong>Kelas {{ $tingkatKey }}</strong> memiliki <strong>{{ $tab['data']['total_kelas'] }} Kelas</strong> dengan total <strong>{{ $tab['data']['total_siswa'] }} Siswa</strong> yang telah di-ranking.
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-label-warning">
+                                                <i class="bx bx-star"></i> Top 3 dari tiap kelas = Kandidat Finalis 10 Besar
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {{-- Loop each class in this Angkatan --}}
+                                    <div class="row g-4">
+                                        @foreach ($tab['data']['by_kelas'] as $namaKelas => $siswaList)
+                                            <div class="col-12">
+                                                <div class="card border shadow-none">
+                                                    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-0 text-primary">
+                                                            <i class="bx bx-chalkboard me-1"></i> {{ $namaKelas }}
+                                                        </h6>
+                                                        <span class="badge bg-label-primary">
+                                                            {{ $siswaList->count() }} Siswa
+                                                        </span>
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-hover table-sm mb-0">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <th class="text-center" style="width: 70px;">Rank Kelas</th>
+                                                                    <th>NISN</th>
+                                                                    <th>Nama Siswa</th>
+                                                                    <th class="text-center bg-label-primary" style="width: 140px;">Skor SMART</th>
+                                                                    <th class="text-center" style="width: 220px;">Status</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach ($siswaList as $item)
+                                                                    <tr>
+                                                                        <td class="text-center">
+                                                                            @if ($item->rank_smart == 1)
+                                                                                <span class="badge bg-warning text-dark"><i class="bx bx-trophy"></i> 1</span>
+                                                                            @elseif ($item->rank_smart == 2)
+                                                                                <span class="badge bg-secondary text-white"><i class="bx bx-medal"></i> 2</span>
+                                                                            @elseif ($item->rank_smart == 3)
+                                                                                <span class="badge bg-info text-white"><i class="bx bx-medal"></i> 3</span>
+                                                                            @else
+                                                                                <span class="badge bg-label-dark">{{ $item->rank_smart }}</span>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td><strong>{{ $item->siswa->nisn }}</strong></td>
+                                                                        <td>{{ $item->siswa->nama_siswa }}</td>
+                                                                        <td class="text-center">
+                                                                            <strong class="text-primary">{{ number_format($item->skor_smart, 4) }}</strong>
+                                                                        </td>
+                                                                        <td class="text-center">
+                                                                            @if ($item->rank_smart <= 3)
+                                                                                <span class="badge bg-label-warning">
+                                                                                    <i class="bx bx-star me-1"></i> Kandidat Finalis (Top 3)
+                                                                                </span>
+                                                                            @else
+                                                                                <span class="badge bg-label-secondary">Reguler</span>
+                                                                            @endif
+                                                                        </td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="text-center py-5 text-muted">
+                                        <i class="bx bx-folder-open bx-lg mb-2 d-block"></i>
+                                        Belum ada data perhitungan SMART untuk Angkatan <strong>Kelas {{ $tingkatKey }}</strong>
+                                    </div>
+                                @endif
+
                             </div>
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination pagination-sm mb-0">
-                                    @if ($hasilList->onFirstPage())
-                                        <li class="page-item disabled"><span class="page-link"><i
-                                                    class="tf-icon bx bx-chevrons-left"></i></span></li>
-                                        <li class="page-item disabled"><span class="page-link"><i
-                                                    class="tf-icon bx bx-chevron-left"></i></span></li>
-                                    @else
-                                        <li class="page-item"><a class="page-link" href="{{ $hasilList->url(1) }}"><i
-                                                    class="tf-icon bx bx-chevrons-left"></i></a></li>
-                                        <li class="page-item"><a class="page-link"
-                                                href="{{ $hasilList->previousPageUrl() }}"><i
-                                                    class="tf-icon bx bx-chevron-left"></i></a></li>
-                                    @endif
-
-                                    @foreach ($hasilList->getUrlRange(max(1, $hasilList->currentPage() - 2), min($hasilList->lastPage(), $hasilList->currentPage() + 2)) as $page => $url)
-                                        @if ($page == $hasilList->currentPage())
-                                            <li class="page-item active"><span
-                                                    class="page-link">{{ $page }}</span></li>
-                                        @else
-                                            <li class="page-item"><a class="page-link"
-                                                    href="{{ $url }}">{{ $page }}</a></li>
-                                        @endif
-                                    @endforeach
-
-                                    @if ($hasilList->hasMorePages())
-                                        <li class="page-item"><a class="page-link"
-                                                href="{{ $hasilList->nextPageUrl() }}"><i
-                                                    class="tf-icon bx bx-chevron-right"></i></a></li>
-                                        <li class="page-item"><a class="page-link"
-                                                href="{{ $hasilList->url($hasilList->lastPage()) }}"><i
-                                                    class="tf-icon bx bx-chevrons-right"></i></a></li>
-                                    @else
-                                        <li class="page-item disabled"><span class="page-link"><i
-                                                    class="tf-icon bx bx-chevron-right"></i></span></li>
-                                        <li class="page-item disabled"><span class="page-link"><i
-                                                    class="tf-icon bx bx-chevrons-right"></i></span></li>
-                                    @endif
-                                </ul>
-                            </nav>
-                        </div>
+                        @endforeach
                     </div>
-                @endif
+                </div>
             </div>
-        @else
+        @elseif ($filterTA)
             <div class="card">
                 <div class="card-body text-center py-5">
                     <i class="bx bx-calculator bx-lg text-muted mb-3 d-block"></i>
-                    <h5>Belum Ada Perhitungan SMART</h5>
+                    <h5>Belum Ada Data Perhitungan SMART</h5>
                     <p class="text-muted">
-                        @if ($filterTA)
-                            @if ($studentsWithCompletePenilaian >= 2)
-                                Klik tombol "Hitung Sekarang" untuk memulai perhitungan ranking menggunakan metode SMART.
-                            @else
-                                Minimal 2 siswa dengan penilaian lengkap diperlukan untuk melakukan perhitungan.
-                            @endif
-                        @else
-                            Pilih tahun ajaran untuk melihat hasil perhitungan.
-                        @endif
+                        Silakan pilih kelas dan klik tombol <strong>"Hitung Sekarang"</strong> untuk melakukan perhitungan SMART per masing-masing kelas.
                     </p>
                 </div>
             </div>
@@ -279,45 +303,27 @@
 @endsection
 
 @push('scripts')
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-        $(function() {
-            const $kelasSelect = $('.js-kelas-select2');
-            if ($kelasSelect.length) {
-                $kelasSelect.select2({
-                    width: '100%',
-                    placeholder: $kelasSelect.data('placeholder') || 'Pilih kelas',
-                    closeOnSelect: false,
-                    allowClear: true
+        $(document).ready(function() {
+            if (typeof $.fn.select2 !== 'undefined' && $('.js-kelas-select2').length) {
+                $('.js-kelas-select2').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Pilih satu atau lebih kelas...'
+                });
+
+                // Auto handle "Semua Kelas" option
+                $('.js-kelas-select2').on('change', function() {
+                    let values = $(this).val() || [];
+                    if (values.includes('all') && values.length > 1) {
+                        if (values[values.length - 1] === 'all') {
+                            $(this).val(['all']).trigger('change');
+                        } else {
+                            let filtered = values.filter(v => v !== 'all');
+                            $(this).val(filtered).trigger('change');
+                        }
+                    }
                 });
             }
         });
     </script>
-    <style>
-        .select2-container--default .select2-selection--multiple {
-            min-height: calc(2.25rem + 2px);
-            border: 1px solid #d9dee3;
-            border-radius: 0.375rem;
-            padding: 0.2rem 0.4rem;
-        }
-
-        .select2-container--default.select2-container--focus .select2-selection--multiple {
-            border-color: #696cff;
-            box-shadow: 0 0 0 .2rem rgba(105, 108, 255, .25);
-        }
-
-        .select2-container--default .select2-selection--multiple .select2-selection__choice {
-            background-color: #e7e7ff;
-            border: 1px solid #c7c9ff;
-            color: #566a7f;
-            border-radius: 999px;
-            padding: 0 0.5rem;
-            margin-top: 0.25rem;
-        }
-
-        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-            background-color: #696cff;
-        }
-    </style>
 @endpush

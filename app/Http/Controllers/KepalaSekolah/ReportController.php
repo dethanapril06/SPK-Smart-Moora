@@ -33,7 +33,10 @@ class ReportController extends Controller
                 $sq->where('id_kelas', $filterKelas)
             ))
             ->get()
-            ->sortBy('rank_smart')
+            ->sortBy([
+                fn($a, $b) => strcmp($a->siswa->kelas->nama_kelas ?? '', $b->siswa->kelas->nama_kelas ?? ''),
+                fn($a, $b) => ($a->rank_smart ?? 9999) <=> ($b->rank_smart ?? 9999)
+            ])
             ->values();
 
         $pdf = Pdf::loadView('kepalasekolah.report.smart_pdf', compact(
@@ -68,7 +71,10 @@ class ReportController extends Controller
                 $sq->where('id_kelas', $filterKelas)
             ))
             ->get()
-            ->sortBy('rank_moora')
+            ->sortBy([
+                fn($a, $b) => strcmp($a->siswa->kelas->nama_kelas ?? '', $b->siswa->kelas->nama_kelas ?? ''),
+                fn($a, $b) => ($a->rank_moora ?? 9999) <=> ($b->rank_moora ?? 9999)
+            ])
             ->values();
 
         $pdf = Pdf::loadView('kepalasekolah.report.moora_pdf', compact(
@@ -104,7 +110,7 @@ class ReportController extends Controller
             'hasilList', 'tahunAjaran', 'semester', 'method'
         ))->setPaper('a4', 'portrait');
 
-        return $pdf->download($this->filename($tahunAjaran, $semester, 'FINALIS_' . strtoupper($method), 'pdf'));
+        return $pdf->download($this->filename($tahunAjaran, $semester, "10_Besar_{$method}", 'pdf'));
     }
 
     public function exportExcelFinalis(Request $request, string $method)
@@ -112,8 +118,8 @@ class ReportController extends Controller
         [$tahunAjaran, $semester, $adminUser] = $this->resolveFinalisParams($request, $method);
 
         return Excel::download(
-            new HasilFinalisExport($tahunAjaran->id_ta, $semester?->id_semester, $adminUser->id, $method),
-            $this->filename($tahunAjaran, $semester, 'FINALIS_' . strtoupper($method), 'xlsx')
+            new HasilFinalisExport((int) $tahunAjaran->id_ta, $method, (int) $adminUser->id, $semester?->id_semester),
+            $this->filename($tahunAjaran, $semester, "10_Besar_{$method}", 'xlsx')
         );
     }
 
@@ -161,7 +167,7 @@ class ReportController extends Controller
 
     protected function resolveSourceName($source): string
     {
-        if ($source === 'admin') return 'Admin (Semua Siswa)';
+        if ($source === 'admin') return 'Admin (Seluruh Kelas)';
 
         $user = User::find($source);
         if ($user) {

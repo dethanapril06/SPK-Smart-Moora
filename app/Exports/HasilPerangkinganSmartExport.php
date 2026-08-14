@@ -49,7 +49,10 @@ class HasilPerangkinganSmartExport implements FromCollection, WithHeadings, With
                 $sq->where('id_kelas', $this->filterKelas)
             ))
             ->get()
-            ->sortBy('rank_smart')
+            ->sortBy([
+                fn($a, $b) => strcmp($a->siswa->kelas->nama_kelas ?? '', $b->siswa->kelas->nama_kelas ?? ''),
+                fn($a, $b) => ($a->rank_smart ?? 9999) <=> ($b->rank_smart ?? 9999)
+            ])
             ->values();
 
         $this->rowCount = $data->count();

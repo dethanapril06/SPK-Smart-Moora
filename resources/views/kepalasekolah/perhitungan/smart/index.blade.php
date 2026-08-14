@@ -62,7 +62,7 @@
                                         </option>
                                     @endforeach
                                 @else
-                                    <option value="admin" selected>Admin (Semua Siswa)</option>
+                                    <option value="admin" selected>Admin (Seluruh Kelas)</option>
                                 @endif
                             </select>
                         </div>
