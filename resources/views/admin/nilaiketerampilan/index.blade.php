@@ -23,6 +23,16 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible" role="alert">
+                <ul class="mb-0 ps-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
 
         <!-- Filter -->
         <div class="card mb-4">
@@ -51,10 +61,10 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3 mt-3">
+                        <div class="col-md-4 mt-3">
                             <label class="form-label">Kelas</label>
                             <select name="kelas" class="form-select">
-                                <option value="">Semua Kelas</option>
+                                <option value="">-- Semua Kelas --</option>
                                 @foreach ($kelasList as $kelas)
                                     <option value="{{ $kelas->id_kelas }}"
                                         {{ $filterKelas == $kelas->id_kelas ? 'selected' : '' }}>
@@ -63,41 +73,57 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-1 mt-3 text-end">
-                            <button type="submit" class="btn btn-sm btn-primary"><i class="bx bx-filter-alt"></i> Filter</button>
+                        <div class="col-md-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bx bx-filter-alt me-1"></i> Tampilkan
+                            </button>
+                            @if ($filterTA || $filterSemester || $filterKelas)
+                                <a href="{{ route('admin.nilaiketerampilan.index') }}" class="btn btn-outline-secondary ms-1">
+                                    <i class="bx bx-reset me-1"></i> Reset
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </form>
             </div>
         </div>
 
-        @if ($filterTA && $filterSemester && $siswaList->count() > 0 && $mapelList->count() > 0)
+        @if ($filterTA && $filterSemester && $mapelList->count() > 0 && $siswaList->count() > 0)
             <div class="card">
-                <h5 class="card-header">Input Nilai Keterampilan (C2)</h5>
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="mb-0">Daftar Nilai Keterampilan</h5>
+                        <small class="text-muted">Batas penginputan nilai adalah <strong>0 - 100</strong>.</small>
+                    </div>
+                    <span class="badge bg-label-primary">{{ $siswaList->count() }} Siswa</span>
+                </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.nilaiketerampilan.store') }}" method="POST">
+                    <form action="{{ route('admin.nilaiketerampilan.store') }}" method="POST" id="form-nilai-keterampilan">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
                         <input type="hidden" name="id_semester" value="{{ $filterSemester }}">
                         <input type="hidden" name="id_kelas" value="{{ $filterKelas }}">
                         <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
+                            <table class="table table-bordered align-middle">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>No</th>
+                                        <th class="text-center" style="width: 50px;">No</th>
                                         <th>Nama Siswa</th>
-                                        <th>Kelas</th>
+                                        <th class="text-center" style="width: 120px;">Kelas</th>
                                         @foreach ($mapelList as $mapel)
-                                            <th class="text-center" style="min-width:80px;">{{ $mapel->kode_mapel }}</th>
+                                            <th class="text-center" style="min-width:90px;">{{ $mapel->kode_mapel }}</th>
                                         @endforeach
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($siswaList as $siswa)
                                         <tr>
-                                            <td>{{ $loop->iteration }}</td>
-                                            <td>{{ $siswa->nama_siswa }}</td>
+                                            <td class="text-center">{{ $loop->iteration }}</td>
                                             <td>
+                                                <strong>{{ $siswa->nama_siswa }}</strong><br>
+                                                <small class="text-muted">NISN: {{ $siswa->nisn }}</small>
+                                            </td>
+                                            <td class="text-center">
                                                 <span class="badge bg-label-info">{{ $siswa->kelas->nama_kelas ?? '-' }}</span>
                                             </td>
                                             @foreach ($mapelList as $mapel)
@@ -107,10 +133,11 @@
                                                         ->first();
                                                 @endphp
                                                 <td>
-                                                    <input type="number" class="form-control form-control-sm text-center"
+                                                    <input type="number" class="form-control form-control-sm text-center input-nilai"
                                                         name="nilai[{{ $siswa->id_siswa }}][{{ $mapel->id_mapel }}]"
                                                         value="{{ $existing ? $existing->nilai : '' }}" min="0"
-                                                        max="100" step="0.01" style="width:80px;">
+                                                        max="100" step="0.01" style="min-width:80px;"
+                                                        placeholder="0-100">
                                                 </td>
                                             @endforeach
                                         </tr>
@@ -138,4 +165,23 @@
             <div class="alert alert-info">Pilih Tahun Ajaran dan Semester untuk mulai input nilai.</div>
         @endif
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.input-nilai').forEach(input => {
+                    input.addEventListener('input', function() {
+                        if (this.value !== '') {
+                            let val = parseFloat(this.value);
+                            if (val < 0) {
+                                this.value = 0;
+                            } else if (val > 100) {
+                                this.value = 100;
+                            }
+                        }
+                    });
+                });
+            });
+        </script>
+    @endpush
 @endsection

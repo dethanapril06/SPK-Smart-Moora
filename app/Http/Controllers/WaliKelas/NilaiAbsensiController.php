@@ -74,13 +74,40 @@ class NilaiAbsensiController extends Controller
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
             'id_semester' => 'required|exists:tb_semester,id_semester',
             'absensi' => 'required|array',
+            'absensi.*.sakit' => 'nullable|integer|min:0|max:30',
+            'absensi.*.izin' => 'nullable|integer|min:0|max:30',
+            'absensi.*.alpa' => 'nullable|integer|min:0|max:30',
+        ], [
+            'absensi.*.sakit.min' => 'Jumlah sakit minimal 0.',
+            'absensi.*.sakit.max' => 'Jumlah sakit maksimal 30 hari.',
+            'absensi.*.izin.min' => 'Jumlah izin minimal 0.',
+            'absensi.*.izin.max' => 'Jumlah izin maksimal 30 hari.',
+            'absensi.*.alpa.min' => 'Jumlah alpa minimal 0.',
+            'absensi.*.alpa.max' => 'Jumlah alpa maksimal 30 hari.',
         ]);
+
+        // Validate that total absence for each student does not exceed 30
+        foreach ($request->absensi as $id_siswa => $values) {
+            $sakitVal = (int) ($values['sakit'] ?? 0);
+            $izinVal  = (int) ($values['izin'] ?? 0);
+            $alpaVal  = (int) ($values['alpa'] ?? 0);
+
+            if (($sakitVal + $izinVal + $alpaVal) > 30) {
+                $siswa = Siswa::find($id_siswa);
+                $nama = $siswa ? $siswa->nama_siswa : "ID {$id_siswa}";
+                return redirect()->back()->with('error', "Total absensi untuk siswa {$nama} ({$sakitVal} Sakit + {$izinVal} Izin + {$alpaVal} Alpa = " . ($sakitVal + $izinVal + $alpaVal) . " hari) melebihi batas maksimal 30 hari.");
+            }
+        }
 
         DB::beginTransaction();
         try {
             foreach ($request->absensi as $id_siswa => $values) {
                 $siswa = Siswa::findOrFail($id_siswa);
                 abort_if($siswa->id_kelas !== $kelas->id_kelas, 403);
+
+                $sakitVal = min(30, max(0, (int) ($values['sakit'] ?? 0)));
+                $izinVal  = min(30, max(0, (int) ($values['izin'] ?? 0)));
+                $alpaVal  = min(30, max(0, (int) ($values['alpa'] ?? 0)));
 
                 NilaiAbsensi::updateOrCreate(
                     [
@@ -89,9 +116,9 @@ class NilaiAbsensiController extends Controller
                         'id_semester' => $validated['id_semester'],
                     ],
                     [
-                        'jumlah_sakit' => $values['sakit'] ?? 0,
-                        'jumlah_izin' => $values['izin'] ?? 0,
-                        'jumlah_alpa' => $values['alpa'] ?? 0,
+                        'jumlah_sakit' => $sakitVal,
+                        'jumlah_izin'  => $izinVal,
+                        'jumlah_alpa'  => $alpaVal,
                     ]
                 );
             }

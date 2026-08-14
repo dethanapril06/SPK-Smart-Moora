@@ -23,6 +23,16 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible" role="alert">
+                <ul class="mb-0 ps-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
 
         <!-- Filter -->
         <div class="card mb-4">
@@ -51,10 +61,10 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3 mt-3">
+                        <div class="col-md-4 mt-3">
                             <label class="form-label">Kelas</label>
                             <select name="kelas" class="form-select">
-                                <option value="">Semua Kelas</option>
+                                <option value="">-- Semua Kelas --</option>
                                 @foreach ($kelasList as $kelas)
                                     <option value="{{ $kelas->id_kelas }}"
                                         {{ $filterKelas == $kelas->id_kelas ? 'selected' : '' }}>
@@ -63,8 +73,15 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-1 mt-3 text-end">
-                            <button type="submit" class="btn btn-sm btn-primary"><i class="bx bx-filter-alt"></i> Filter</button>
+                        <div class="col-md-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bx bx-filter-alt me-1"></i> Tampilkan
+                            </button>
+                            @if ($filterTA || $filterSemester || $filterKelas)
+                                <a href="{{ route('admin.nilaiabsensi.index') }}" class="btn btn-outline-secondary ms-1">
+                                    <i class="bx bx-reset me-1"></i> Reset
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </form>
@@ -73,62 +90,76 @@
 
         @if ($filterTA && $filterSemester && $siswaList->count() > 0)
             <div class="card">
-                <h5 class="card-header">Input Data Absensi (C6)</h5>
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="mb-0">Daftar Absensi Siswa</h5>
+                        <small class="text-muted">Batas penginputan absensi per kolom maupun total ketidakhadiran adalah <strong>0 - 30 hari</strong>.</small>
+                    </div>
+                    <span class="badge bg-label-primary">{{ $siswaList->count() }} Siswa</span>
+                </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.nilaiabsensi.store') }}" method="POST">
+                    <form action="{{ route('admin.nilaiabsensi.store') }}" method="POST" id="form-absensi">
                         @csrf
                         <input type="hidden" name="id_ta" value="{{ $filterTA }}">
                         <input type="hidden" name="id_semester" value="{{ $filterSemester }}">
                         <input type="hidden" name="id_kelas" value="{{ $filterKelas }}">
                         <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
+                            <table class="table table-bordered align-middle">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>No</th>
+                                        <th class="text-center" style="width: 50px;">No</th>
                                         <th>Nama Siswa</th>
-                                        <th>Kelas</th>
-                                        <th class="text-center">Sakit</th>
-                                        <th class="text-center">Izin</th>
-                                        <th class="text-center">Alpa</th>
-                                        <th class="text-center">Total</th>
+                                        <th class="text-center" style="width: 120px;">Kelas</th>
+                                        <th class="text-center" style="width: 110px;">Sakit (0-30)</th>
+                                        <th class="text-center" style="width: 110px;">Izin (0-30)</th>
+                                        <th class="text-center" style="width: 110px;">Alpa (0-30)</th>
+                                        <th class="text-center" style="width: 100px;">Total (Maks 30)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($siswaList as $siswa)
                                         @php
                                             $existing = $siswa->nilaiAbsensi->first();
+                                            $sakit = $existing ? $existing->jumlah_sakit : 0;
+                                            $izin = $existing ? $existing->jumlah_izin : 0;
+                                            $alpa = $existing ? $existing->jumlah_alpa : 0;
+                                            $total = $sakit + $izin + $alpa;
                                         @endphp
                                         <tr>
-                                            <td>{{ $loop->iteration }}</td>
-                                            <td>{{ $siswa->nama_siswa }}</td>
+                                            <td class="text-center">{{ $loop->iteration }}</td>
                                             <td>
+                                                <strong>{{ $siswa->nama_siswa }}</strong><br>
+                                                <small class="text-muted">NISN: {{ $siswa->nisn }}</small>
+                                            </td>
+                                            <td class="text-center">
                                                 <span class="badge bg-label-info">{{ $siswa->kelas->nama_kelas ?? '-' }}</span>
                                             </td>
                                             <td>
                                                 <input type="number"
                                                     class="form-control form-control-sm text-center absensi-input"
                                                     name="jumlah_sakit[{{ $siswa->id_siswa }}]"
-                                                    value="{{ $existing ? $existing->jumlah_sakit : 0 }}" min="0"
-                                                    data-row="{{ $siswa->id_siswa }}" style="width:80px;">
+                                                    value="{{ $sakit }}" min="0" max="30" step="1"
+                                                    data-row="{{ $siswa->id_siswa }}">
                                             </td>
                                             <td>
                                                 <input type="number"
                                                     class="form-control form-control-sm text-center absensi-input"
                                                     name="jumlah_izin[{{ $siswa->id_siswa }}]"
-                                                    value="{{ $existing ? $existing->jumlah_izin : 0 }}" min="0"
-                                                    data-row="{{ $siswa->id_siswa }}" style="width:80px;">
+                                                    value="{{ $izin }}" min="0" max="30" step="1"
+                                                    data-row="{{ $siswa->id_siswa }}">
                                             </td>
                                             <td>
                                                 <input type="number"
                                                     class="form-control form-control-sm text-center absensi-input"
                                                     name="jumlah_alpa[{{ $siswa->id_siswa }}]"
-                                                    value="{{ $existing ? $existing->jumlah_alpa : 0 }}" min="0"
-                                                    data-row="{{ $siswa->id_siswa }}" style="width:80px;">
+                                                    value="{{ $alpa }}" min="0" max="30" step="1"
+                                                    data-row="{{ $siswa->id_siswa }}">
                                             </td>
                                             <td class="text-center">
-                                                <strong id="total-{{ $siswa->id_siswa }}">
-                                                    {{ $existing ? $existing->jumlah_sakit + $existing->jumlah_izin + $existing->jumlah_alpa : 0 }}
+                                                <strong id="total-{{ $siswa->id_siswa }}" class="{{ $total > 30 ? 'text-danger' : 'text-primary' }}">
+                                                    {{ $total }}
                                                 </strong>
+                                                <small class="d-block text-danger err-msg-{{ $siswa->id_siswa }} {{ $total > 30 ? '' : 'd-none' }}">Maks 30!</small>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -136,7 +167,7 @@
                             </table>
                         </div>
                         <div class="mt-3 text-end">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="btn-submit-absensi">
                                 <i class="bx bx-save me-1"></i> Simpan Semua Data
                             </button>
                         </div>
@@ -152,14 +183,67 @@
 
     @push('scripts')
         <script>
-            document.querySelectorAll('.absensi-input').forEach(input => {
-                input.addEventListener('input', function() {
-                    const row = this.dataset.row;
+            document.addEventListener('DOMContentLoaded', function() {
+                function validateRow(row) {
                     const inputs = document.querySelectorAll(`.absensi-input[data-row="${row}"]`);
                     let total = 0;
-                    inputs.forEach(i => total += parseInt(i.value) || 0);
-                    document.getElementById(`total-${row}`).textContent = total;
+                    inputs.forEach(input => {
+                        let val = parseInt(input.value);
+                        if (isNaN(val) || val < 0) {
+                            input.value = 0;
+                            val = 0;
+                        } else if (val > 30) {
+                            input.value = 30;
+                            val = 30;
+                        }
+                        total += val;
+                    });
+
+                    const totalElem = document.getElementById(`total-${row}`);
+                    const errElem = document.querySelector(`.err-msg-${row}`);
+                    if (totalElem) {
+                        totalElem.textContent = total;
+                        if (total > 30) {
+                            totalElem.className = 'text-danger fw-bold';
+                            if (errElem) errElem.classList.remove('d-none');
+                            inputs.forEach(i => i.classList.add('is-invalid'));
+                        } else {
+                            totalElem.className = 'text-primary';
+                            if (errElem) errElem.classList.add('d-none');
+                            inputs.forEach(i => i.classList.remove('is-invalid'));
+                        }
+                    }
+                    return total <= 30;
+                }
+
+                document.querySelectorAll('.absensi-input').forEach(input => {
+                    input.addEventListener('input', function() {
+                        validateRow(this.dataset.row);
+                    });
                 });
+
+                const form = document.getElementById('form-absensi');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        let isValid = true;
+                        document.querySelectorAll('.absensi-input').forEach(input => {
+                            const row = input.dataset.row;
+                            if (!validateRow(row)) {
+                                isValid = false;
+                            }
+                        });
+
+                        if (!isValid) {
+                            e.preventDefault();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Batas Absensi Terlampaui',
+                                text: 'Total absensi (Sakit + Izin + Alpa) untuk seorang siswa tidak boleh melebihi 30 hari.',
+                                confirmButtonText: 'Perbaiki'
+                            });
+                        }
+                    });
+                }
             });
         </script>
     @endpush

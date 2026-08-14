@@ -78,6 +78,10 @@ class NilaiKeterampilanController extends Controller
             'id_semester' => 'required|exists:tb_semester,id_semester',
             'nilai' => 'required|array',
             'nilai.*.*' => 'nullable|numeric|min:0|max:100',
+        ], [
+            'nilai.*.*.numeric' => 'Nilai harus berupa angka.',
+            'nilai.*.*.min' => 'Nilai keterampilan minimal 0.',
+            'nilai.*.*.max' => 'Nilai keterampilan maksimal 100.',
         ]);
 
         DB::beginTransaction();

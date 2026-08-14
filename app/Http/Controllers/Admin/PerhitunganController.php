@@ -127,7 +127,7 @@ class PerhitunganController extends Controller
 
         $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
-            'id_semester' => 'required|exists:tb_semester,id_semester',
+            'id_semester' => 'nullable|exists:tb_semester,id_semester',
             'kelas' => 'required|array|min:1',
         ]);
 
@@ -140,8 +140,8 @@ class PerhitunganController extends Controller
             return redirect()->back()->with('error', 'Terdapat kelas yang tidak valid.');
         }
 
-        $id_ta       = $request->input('id_ta');
-        $id_semester = $request->input('id_semester');
+        $id_ta       = (int) $request->input('id_ta');
+        $id_semester = $request->filled('id_semester') ? (int) $request->input('id_semester') : null;
         $kelasIds    = array_values(array_unique($kelasIds));
         $kriteriaCount = Kriteria::count();
         $allSelectedSiswaIds = Siswa::whereIn('id_kelas', $kelasIds)->pluck('id_siswa')->all();
@@ -346,7 +346,7 @@ class PerhitunganController extends Controller
 
         $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
-            'id_semester' => 'required|exists:tb_semester,id_semester',
+            'id_semester' => 'nullable|exists:tb_semester,id_semester',
             'kelas' => 'required|array|min:1',
         ]);
 
@@ -359,8 +359,8 @@ class PerhitunganController extends Controller
             return redirect()->back()->with('error', 'Terdapat kelas yang tidak valid.');
         }
 
-        $id_ta       = $request->input('id_ta');
-        $id_semester = $request->input('id_semester');
+        $id_ta       = (int) $request->input('id_ta');
+        $id_semester = $request->filled('id_semester') ? (int) $request->input('id_semester') : null;
         $kelasIds    = array_values(array_unique($kelasIds));
         $kriteriaCount = Kriteria::count();
         $allSelectedSiswaIds = Siswa::whereIn('id_kelas', $kelasIds)->pluck('id_siswa')->all();
@@ -566,19 +566,25 @@ class PerhitunganController extends Controller
     {
         $validated = $request->validate([
             'id_ta' => 'required|exists:tb_tahun_ajaran,id_ta',
-            'id_semester' => 'required|exists:tb_semester,id_semester',
+            'id_semester' => 'nullable|exists:tb_semester,id_semester',
         ]);
+
+        $idTa = (int) $validated['id_ta'];
+        $idSemester = !empty($validated['id_semester']) ? (int) $validated['id_semester'] : null;
 
         try {
             $summary = $this->finalisCalculator->calculate(
-                (int) $validated['id_ta'],
+                $idTa,
                 $method,
                 auth()->id(),
-                (int) $validated['id_semester']
+                $idSemester
             );
 
             return redirect()
-                ->route("admin.perhitungan.finalis.{$method}.index", ['tahun_ajaran' => $validated['id_ta'], 'semester' => $validated['id_semester']])
+                ->route("admin.perhitungan.finalis.{$method}.index", [
+                    'tahun_ajaran' => $idTa,
+                    'semester' => $idSemester
+                ])
                 ->with('success', 'Perhitungan 10 Besar ' . strtoupper($method) . " berhasil! {$summary['candidate_count']} kandidat dari 3 besar tiap kelas telah dihitung ulang per angkatan.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghitung 10 Besar ' . strtoupper($method) . ': ' . $e->getMessage());
