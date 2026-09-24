@@ -48,7 +48,8 @@ class NilaiSikapController extends Controller
             $siswaQuery = Siswa::with(['kelas', 'nilaiSikap' => function ($q) use ($filterTA, $filterSemester) {
                 $q->where('id_ta', $filterTA)->where('id_semester', $filterSemester);
             }])
-                ->where('id_ta', $filterTA);
+                ->where('id_ta', $filterTA)
+                ->forSemester($filterSemester);
 
             if ($filterKelas) {
                 $siswaQuery->where('id_kelas', $filterKelas);

@@ -14,18 +14,42 @@
             <h5 class="card-header">Data Siswa</h5>
             <div class="card-body">
                 <form action="{{ route('kepalasekolah.siswa.index') }}" method="GET" class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <select class="form-select" name="kelas">
-                            <option value="">Semua Kelas</option>
-                            @foreach ($kelasList as $k)
-                                <option value="{{ $k->id_kelas }}" {{ $filterKelas == $k->id_kelas ? 'selected' : '' }}>
-                                    {{ $k->nama_kelas }}
+                    <div class="col-md-3">
+                        <input type="text" name="search" class="form-control" placeholder="Cari NISN / Nama..." value="{{ $search ?? '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="ta" id="filter_ta">
+                            <option value="">Semua Tahun Ajaran</option>
+                            @foreach ($taList as $t)
+                                <option value="{{ $t->id_ta }}" {{ ($filterTA ?? '') == $t->id_ta ? 'selected' : '' }}>
+                                    {{ $t->tahun_ajaran }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <button type="submit" class="btn btn-primary"><i class="bx bx-search"></i> Filter</button>
+                        <select class="form-select" name="semester" id="filter_semester">
+                            <option value="">Semua Semester</option>
+                            @foreach ($semesterList as $s)
+                                <option value="{{ $s->id_semester }}" data-ta="{{ $s->id_ta }}" {{ ($filterSemester ?? '') == $s->id_semester ? 'selected' : '' }}>
+                                    {{ $s->nama_semester }} ({{ $s->periode_bulan }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" name="kelas">
+                            <option value="">Semua Kelas</option>
+                            @foreach ($kelasList as $k)
+                                <option value="{{ $k->id_kelas }}" {{ ($filterKelas ?? '') == $k->id_kelas ? 'selected' : '' }}>
+                                    {{ $k->nama_kelas }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1"><i class="bx bx-search"></i> Filter</button>
+                        <a href="{{ route('kepalasekolah.siswa.index') }}" class="btn btn-outline-secondary"><i class="bx bx-reset"></i></a>
                     </div>
                 </form>
             </div>
@@ -37,7 +61,9 @@
                             <th>NISN</th>
                             <th>Nama Siswa</th>
                             <th>Kelas</th>
-                            <th>Jenis Kelamin</th>
+                            <th>L/P</th>
+                            <th>Tahun Ajaran</th>
+                            <th>Semester Masuk</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -55,10 +81,25 @@
                                     @endif
                                 </td>
                                 <td>{{ $siswa->jenis_kelamin }}</td>
+                                <td>
+                                    <span class="badge bg-label-primary">{{ $siswa->tahunAjaran->tahun_ajaran ?? '-' }}</span>
+                                </td>
+                                <td>
+                                    @if($siswa->semester)
+                                        <span class="badge bg-label-{{ $siswa->semester->nama_semester == 'Ganjil' ? 'info' : 'warning' }}">
+                                            {{ $siswa->semester->nama_semester }}
+                                        </span>
+                                        @if($siswa->isSiswaBaruGenap())
+                                            <span class="badge bg-label-success ms-1" title="Masuk di Semester Genap"><i class="bx bx-user-plus"></i> Baru</span>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center">Tidak ada data siswa.</td>
+                                <td colspan="7" class="text-center">Tidak ada data siswa.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -135,3 +176,28 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const taSelect = document.getElementById('filter_ta');
+        const semesterSelect = document.getElementById('filter_semester');
+        if (taSelect && semesterSelect) {
+            const allSemesterOptions = Array.from(semesterSelect.querySelectorAll('option')).slice(1);
+            function updateSemesterOptions() {
+                const selectedTa = taSelect.value;
+                const currentVal = semesterSelect.value;
+                semesterSelect.innerHTML = '<option value="">Semua Semester</option>';
+                allSemesterOptions.forEach(opt => {
+                    if (!selectedTa || opt.getAttribute('data-ta') === selectedTa) {
+                        const newOpt = opt.cloneNode(true);
+                        if (newOpt.value === currentVal) newOpt.selected = true;
+                        semesterSelect.appendChild(newOpt);
+                    }
+                });
+            }
+            taSelect.addEventListener('change', updateSemesterOptions);
+        }
+    });
+</script>
+@endpush

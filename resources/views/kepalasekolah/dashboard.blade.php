@@ -18,7 +18,10 @@
                                 @if ($tahunAjaranAktif)
                                     <span class="badge bg-label-primary rounded-pill">
                                         <i class="bx bx-calendar"></i>
-                                        {{ $tahunAjaranAktif->tahun_ajaran }} - {{ $tahunAjaranAktif->semester }}
+                                        TA: {{ $tahunAjaranAktif->tahun_ajaran }} &bull; Semester {{ $activeSemester->nama_semester ?? $tahunAjaranAktif->semester }}
+                                        @if($activeSemester && $activeSemester->periode_bulan)
+                                            ({{ $activeSemester->periode_bulan }})
+                                        @endif
                                     </span>
                                 @else
                                     <span class="badge bg-label-warning rounded-pill">
@@ -46,8 +49,13 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <span class="fw-semibold d-block mb-1">Total Siswa</span>
-                                <h3 class="card-title mb-2">{{ $totalSiswa }}</h3>
-                                <small class="text-muted fw-semibold"><i class="bx bx-user"></i> Data keseluruhan</small>
+                                <h3 class="card-title mb-1">{{ $totalSiswaSemesterAktif ?? $totalSiswa }}</h3>
+                                <small class="text-muted fw-semibold">
+                                    <i class="bx bx-user-check"></i> Semester Aktif
+                                    @if(isset($totalSiswaSemesterAktif) && $totalSiswaSemesterAktif != $totalSiswa)
+                                        <span class="text-primary">({{ $totalSiswa }} total)</span>
+                                    @endif
+                                </small>
                             </div>
                             <div class="avatar flex-shrink-0">
                                 <span class="avatar-initial rounded bg-label-primary"><i

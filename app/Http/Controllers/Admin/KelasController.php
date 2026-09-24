@@ -7,6 +7,7 @@ use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
+use App\Models\Semester;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -146,7 +147,11 @@ class KelasController extends Controller
             }
         }
 
-        DB::transaction(function () use ($siswaList, $validated, $targetTahunAjaran) {
+        $targetSemesterGanjil = Semester::where('id_ta', $targetTahunAjaran->id_ta)
+            ->where('nama_semester', 'Ganjil')
+            ->first();
+
+        DB::transaction(function () use ($siswaList, $validated, $targetTahunAjaran, $targetSemesterGanjil) {
             foreach ($siswaList as $siswa) {
                 $targetKelasId = $validated['tujuan'][$siswa->id_siswa] ?? null;
 
@@ -157,6 +162,7 @@ class KelasController extends Controller
                 $siswa->update([
                     'id_kelas' => $targetKelasId,
                     'id_ta' => $targetTahunAjaran->id_ta,
+                    'id_semester' => $targetSemesterGanjil?->id_semester ?? $siswa->id_semester,
                 ]);
             }
         });

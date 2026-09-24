@@ -16,9 +16,14 @@
                                     <strong>SMART</strong> & <strong>MOORA</strong> untuk menentukan siswa berprestasi.
                                 </p>
                                 @if ($tahunAjaranAktif)
-                                    <span class="badge bg-label-primary rounded-pill">
-                                        <i class="bx bx-calendar"></i>
-                                        {{ $tahunAjaranAktif->tahun_ajaran }} - {{ $tahunAjaranAktif->semester }}
+                                    <span class="badge bg-label-primary rounded-pill p-2">
+                                        <i class="bx bx-calendar me-1"></i>
+                                        TA {{ $tahunAjaranAktif->tahun_ajaran }} - 
+                                        @if($activeSemester)
+                                            Semester {{ $activeSemester->nama_semester }} ({{ $activeSemester->periode_bulan }})
+                                        @else
+                                            Semester {{ $tahunAjaranAktif->semester }}
+                                        @endif
                                     </span>
                                 @else
                                     <span class="badge bg-label-warning rounded-pill">
@@ -48,9 +53,14 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <span class="fw-semibold d-block mb-1">Total Siswa</span>
-                                <h3 class="card-title mb-2">{{ $totalSiswa }}</h3>
+                                <h3 class="card-title mb-2">{{ $totalSiswaSemesterAktif }}</h3>
                                 <small class="text-muted fw-semibold">
-                                    <i class="bx bx-user"></i> Data keseluruhan
+                                    <i class="bx bx-user"></i> 
+                                    @if($activeSemester)
+                                        Semester Aktif (Total: {{ $totalSiswa }})
+                                    @else
+                                        Data keseluruhan
+                                    @endif
                                 </small>
                             </div>
                             <div class="avatar flex-shrink-0">

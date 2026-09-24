@@ -63,6 +63,9 @@ class PenilaianController extends Controller
             ->when($filterTA, function ($query, $filterTA) {
                 return $query->where('id_ta', $filterTA);
             })
+            ->when($filterSemester, function ($query, $filterSemester) {
+                return $query->forSemester($filterSemester);
+            })
             ->when($filterKelas, function ($query, $filterKelas) {
                 return $query->where('id_kelas', $filterKelas);
             })
@@ -213,7 +216,9 @@ class PenilaianController extends Controller
 
         $id_ta = $validated['id_ta'];
         $id_semester = $validated['id_semester'];
-        $siswaList = Siswa::where('id_ta', $id_ta)->get();
+        $siswaList = Siswa::where('id_ta', $id_ta)
+            ->forSemester($id_semester)
+            ->get();
         $kriteriaList = Kriteria::all()->keyBy('kode_kriteria');
 
         DB::beginTransaction();

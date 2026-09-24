@@ -48,7 +48,8 @@ class NilaiEkstrakurikulerController extends Controller
             $siswaQuery = Siswa::with(['kelas', 'nilaiEkstrakurikuler' => function ($q) use ($filterTA, $filterSemester) {
                 $q->where('id_ta', $filterTA)->where('id_semester', $filterSemester);
             }])
-                ->where('id_ta', $filterTA);
+                ->where('id_ta', $filterTA)
+                ->forSemester($filterSemester);
 
             if ($filterKelas) {
                 $siswaQuery->where('id_kelas', $filterKelas);
@@ -95,6 +96,9 @@ class NilaiEkstrakurikulerController extends Controller
 
         if ($selectedTA) {
             $siswaQuery = Siswa::where('id_ta', $selectedTA);
+            if ($selectedSemester) {
+                $siswaQuery->forSemester($selectedSemester);
+            }
             if ($selectedKelas) {
                 $siswaQuery->where('id_kelas', $selectedKelas);
             }

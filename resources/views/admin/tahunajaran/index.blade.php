@@ -81,10 +81,15 @@
                                 <td><strong>{{ $item->tahun_ajaran }}</strong></td>
                                 <td>
                                     @forelse ($item->semesters as $semester)
-                                        <span
-                                            class="badge bg-label-{{ $semester->nama_semester == 'Ganjil' ? 'primary' : 'info' }} me-1">
-                                            {{ $semester->nama_semester }}{{ $semester->is_active ? ' (Aktif)' : '' }}
-                                        </span>
+                                        <div class="mb-1">
+                                            <span
+                                                class="badge bg-label-{{ $semester->nama_semester == 'Ganjil' ? 'primary' : 'info' }}">
+                                                {{ $semester->nama_semester }} ({{ $semester->periode_bulan }})
+                                                @if ($semester->is_active)
+                                                    <i class="bx bx-check ms-1"></i> Aktif
+                                                @endif
+                                            </span>
+                                        </div>
                                     @empty
                                         <span class="badge bg-label-secondary">Belum Ada Semester</span>
                                     @endforelse
@@ -96,7 +101,21 @@
                                         <span class="badge bg-label-secondary">Tidak Aktif</span>
                                     @endif
                                 </td>
-                                <td>{{ $item->siswa->count() }} siswa</td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <div>
+                                            <small class="text-muted fw-semibold">Ganjil:</small>
+                                            <span class="badge bg-label-primary">{{ $item->countSiswaSemester('Ganjil') }} siswa</span>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted fw-semibold">Genap:</small>
+                                            <span class="badge bg-label-info">{{ $item->countSiswaSemester('Genap') }} siswa</span>
+                                            @if ($item->countSiswaBaruGenap() > 0)
+                                                <small class="text-success fw-semibold ms-1" title="Siswa baru terdaftar di semester Genap">(+{{ $item->countSiswaBaruGenap() }} baru)</small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="dropdown">
                                         <button type="button" class="btn p-0 dropdown-toggle hide-arrow"

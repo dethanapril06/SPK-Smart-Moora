@@ -12,12 +12,32 @@ class Semester extends Model
     protected $fillable = [
         'id_ta',
         'nama_semester',
+        'periode_bulan',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function getPeriodeBulanAttribute($value)
+    {
+        if ($value) {
+            return $value;
+        }
+
+        return $this->nama_semester === 'Ganjil' ? 'Juli - Desember' : 'Januari - Juni';
+    }
+
+    public function getNamaLengkapAttribute(): string
+    {
+        return "{$this->nama_semester} ({$this->periode_bulan})";
+    }
+
+    public function siswa()
+    {
+        return $this->hasMany(Siswa::class, 'id_semester');
+    }
 
     public function tahunAjaran()
     {

@@ -59,15 +59,45 @@ class TahunAjaran extends Model
     public function ensureDefaultSemesters(bool $active = false): void
     {
         foreach (['Ganjil', 'Genap'] as $semesterName) {
+            $defaultPeriode = $semesterName === 'Ganjil' ? 'Juli - Desember' : 'Januari - Juni';
             $semester = $this->semesters()->firstOrCreate(
                 ['nama_semester' => $semesterName],
-                ['is_active' => false]
+                [
+                    'periode_bulan' => $defaultPeriode,
+                    'is_active' => false,
+                ]
             );
 
             $semester->update([
+                'periode_bulan' => $semester->periode_bulan ?: $defaultPeriode,
                 'is_active' => $active && $semesterName === 'Ganjil',
             ]);
         }
+    }
+
+    public function countSiswaSemester(string $namaSemester): int
+    {
+        $semester = $this->semesters->firstWhere('nama_semester', $namaSemester);
+        if (!$semester) {
+            return 0;
+        }
+
+        if ($namaSemester === 'Ganjil') {
+            return $this->siswa()->where('id_semester', $semester->id_semester)->count();
+        }
+
+        // Genap includes all active students in this TA (continued from Ganjil + newly added in Genap)
+        return $this->siswa()->count();
+    }
+
+    public function countSiswaBaruGenap(): int
+    {
+        $semesterGenap = $this->semesters->firstWhere('nama_semester', 'Genap');
+        if (!$semesterGenap) {
+            return 0;
+        }
+
+        return $this->siswa()->where('id_semester', $semesterGenap->id_semester)->count();
     }
 
     public function activateSemester(string $semesterName): void

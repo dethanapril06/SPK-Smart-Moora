@@ -41,7 +41,26 @@
                             <tr>
                                 <td class="fw-semibold">Tahun Ajaran</td>
                                 <td>: @if ($siswa->tahunAjaran)
-                                        {{ $siswa->tahunAjaran->tahun_ajaran }} - {{ $siswa->tahunAjaran->semester }}
+                                        {{ $siswa->tahunAjaran->tahun_ajaran }}
+                                        @if ($siswa->tahunAjaran->is_active)
+                                            <span class="badge bg-label-success ms-1">TA Aktif</span>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">Semester Masuk</td>
+                                <td>: @if ($siswa->semester)
+                                        <span class="badge bg-label-{{ $siswa->semester->nama_semester == 'Ganjil' ? 'primary' : 'info' }}">
+                                            Semester {{ $siswa->semester->nama_semester }} ({{ $siswa->semester->periode_bulan }})
+                                        </span>
+                                        @if ($siswa->isSiswaBaruGenap())
+                                            <span class="badge bg-label-warning ms-1">
+                                                <i class="bx bx-user-plus"></i> Siswa Baru Genap
+                                            </span>
+                                        @endif
                                     @else
                                         -
                                     @endif

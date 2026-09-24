@@ -50,6 +50,9 @@ class PenilaianController extends Controller
             ->when($filterTA, function ($query, $filterTA) {
                 return $query->where('id_ta', $filterTA);
             })
+            ->when($filterSemester, function ($query, $filterSemester) {
+                return $query->forSemester($filterSemester);
+            })
             ->when($filterKelas, function ($query, $filterKelas) {
                 return $query->where('id_kelas', $filterKelas);
             })

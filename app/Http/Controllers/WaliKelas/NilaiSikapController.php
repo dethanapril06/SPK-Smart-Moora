@@ -58,6 +58,7 @@ class NilaiSikapController extends Controller
             }])
                 ->where('id_kelas', $kelas->id_kelas)
                 ->where('id_ta', $filterTA)
+                ->forSemester($filterSemester)
                 ->orderBy('nama_siswa')
                 ->get();
         }

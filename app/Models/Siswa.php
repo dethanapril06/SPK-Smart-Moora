@@ -18,6 +18,7 @@ class Siswa extends Model
         'alamat',
         'id_kelas',
         'id_ta',
+        'id_semester',
         'status',
         'tahun_lulus',
     ];
@@ -32,6 +33,31 @@ class Siswa extends Model
         return $query->where('status', 'lulus');
     }
 
+    public function scopeForSemester($query, $idSemester)
+    {
+        if (!$idSemester) {
+            return $query;
+        }
+
+        $semester = $idSemester instanceof Semester ? $idSemester : Semester::find($idSemester);
+        if (!$semester) {
+            return $query;
+        }
+
+        if ($semester->nama_semester === 'Ganjil') {
+            return $query->where('tb_siswa.id_ta', $semester->id_ta)
+                ->where('tb_siswa.id_semester', $semester->id_semester);
+        }
+
+        return $query->where('tb_siswa.id_ta', $semester->id_ta);
+    }
+
+    public function isSiswaBaruGenap(): bool
+    {
+        $sem = $this->relationLoaded('semester') ? $this->semester : $this->semester()->first();
+        return $sem?->nama_semester === 'Genap';
+    }
+
     // Relasi dengan Kelas
     public function kelas()
     {
@@ -42,6 +68,12 @@ class Siswa extends Model
     public function tahunAjaran()
     {
         return $this->belongsTo(TahunAjaran::class, 'id_ta');
+    }
+
+    // Relasi dengan Semester Masuk
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'id_semester');
     }
 
     // Relasi dengan Penilaian

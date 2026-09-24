@@ -21,6 +21,12 @@ class DashboardController extends Controller
         $totalKriteria = Kriteria::count();
 
         $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
+        $activeSemester = null;
+        if ($tahunAjaranAktif) {
+            $activeSemester = \App\Models\Semester::where('id_ta', $tahunAjaranAktif->id_ta)->where('is_active', true)->first()
+                ?? \App\Models\Semester::where('id_ta', $tahunAjaranAktif->id_ta)->first();
+        }
+        $totalSiswaSemesterAktif = $activeSemester ? Siswa::aktif()->forSemester($activeSemester)->count() : $totalSiswa;
 
         $siswadinilai = 0;
         $siswaBelumDinilai = 0;
@@ -76,6 +82,8 @@ class DashboardController extends Controller
             'totalKelas',
             'totalKriteria',
             'tahunAjaranAktif',
+            'activeSemester',
+            'totalSiswaSemesterAktif',
             'siswadinilai',
             'siswaBelumDinilai',
             'totalPelanggaran',

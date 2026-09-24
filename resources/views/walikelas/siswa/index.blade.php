@@ -19,25 +19,66 @@
             </div>
         @endif
 
+        <!-- Search & Filter Form -->
         <div class="card mb-4">
             <div class="card-body">
                 <form action="{{ route('walikelas.siswa.index') }}" method="GET">
-                    <div class="row align-items-end">
-                        <div class="col-md-10">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label" for="tahun_ajaran">Tahun Ajaran</label>
+                            <select name="tahun_ajaran" id="tahun_ajaran" class="form-select" onchange="updateSemesterFilter(this.value)">
+                                <option value="">Semua Tahun Ajaran</option>
+                                @foreach ($tahunAjaranList as $ta)
+                                    <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
+                                        {{ $ta->tahun_ajaran }} {{ $ta->is_active ? '(Aktif)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="semester">Semester</label>
+                            <select name="semester" id="semester" class="form-select">
+                                <option value="">Semua Semester</option>
+                                @foreach ($semesterList as $sem)
+                                    <option value="{{ $sem->id_semester }}" data-ta="{{ $sem->id_ta }}"
+                                        {{ $filterSemester == $sem->id_semester ? 'selected' : '' }}>
+                                        {{ $sem->nama_semester }} ({{ $sem->periode_bulan }}) {{ $sem->is_active ? '(Aktif)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label" for="search">Cari Siswa</label>
                             <input type="text" class="form-control" id="search" name="search"
                                 placeholder="Cari berdasarkan NISN, nama siswa, atau alamat..." value="{{ $search }}">
                         </div>
-                        <div class="col-md-2 mt-3 text-end">
-                            <button type="submit" class="btn btn-primary"><i class="bx bx-search"></i></button>
+                        <div class="col-md-2 text-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bx bx-filter-alt me-1"></i> Filter
+                            </button>
                         </div>
                     </div>
-                    @if ($search)
-                        <div class="mt-2 text-end">
+                    @if ($search || $filterTA || $filterSemester)
+                        <div class="mt-3 d-flex align-items-center gap-2 flex-wrap">
                             <a href="{{ route('walikelas.siswa.index') }}" class="btn btn-sm btn-label-secondary">
-                                <i class="bx bx-x"></i> Reset
+                                <i class="bx bx-x"></i> Reset Filter
                             </a>
-                            <span class="text-muted ms-2">Hasil untuk "{{ $search }}"</span>
+                            @if ($filterTA)
+                                <span class="badge bg-label-primary">
+                                    TA: {{ $tahunAjaranList->firstWhere('id_ta', $filterTA)?->tahun_ajaran }}
+                                </span>
+                            @endif
+                            @if ($filterSemester)
+                                @php
+                                    $currentSemObj = $semesterList->firstWhere('id_semester', $filterSemester);
+                                @endphp
+                                <span class="badge bg-label-info">
+                                    Semester: {{ $currentSemObj?->nama_semester }} ({{ $currentSemObj?->periode_bulan }})
+                                </span>
+                            @endif
+                            @if ($search)
+                                <span class="text-muted ms-2">Pencarian: "{{ $search }}"</span>
+                            @endif
                         </div>
                     @endif
                 </form>
@@ -54,7 +95,7 @@
                             <th>NISN</th>
                             <th>Nama Siswa</th>
                             <th>JK</th>
-                            <th>Tahun Ajaran</th>
+                            <th>Tahun Ajaran & Masuk</th>
                             <th style="width: 120px;">Aksi</th>
                         </tr>
                     </thead>
@@ -63,7 +104,14 @@
                             <tr>
                                 <td>{{ ($siswa->currentPage() - 1) * $siswa->perPage() + $loop->iteration }}</td>
                                 <td><strong>{{ $item->nisn }}</strong></td>
-                                <td>{{ $item->nama_siswa }}</td>
+                                <td>
+                                    {{ $item->nama_siswa }}
+                                    @if ($item->isSiswaBaruGenap())
+                                        <span class="badge bg-label-warning ms-1" style="font-size: 0.7rem;" title="Siswa baru masuk di semester Genap">
+                                            <i class="bx bx-user-plus"></i> Siswa Baru Genap
+                                        </span>
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge bg-label-{{ $item->jenis_kelamin == 'L' ? 'primary' : 'danger' }}">
                                         {{ $item->jenis_kelamin }}
@@ -71,7 +119,11 @@
                                 </td>
                                 <td>
                                     @if ($item->tahunAjaran)
-                                        {{ $item->tahunAjaran->tahun_ajaran }} ({{ $item->tahunAjaran->semester }})
+                                        <div><strong>{{ $item->tahunAjaran->tahun_ajaran }}</strong></div>
+                                        <small class="text-muted">
+                                            Masuk: {{ $item->semester?->nama_semester ?? $item->tahunAjaran->semester }}
+                                            ({{ $item->semester?->periode_bulan ?? '-' }})
+                                        </small>
                                     @else
                                         -
                                     @endif
@@ -209,6 +261,36 @@
                     }
                 });
             });
+        });
+
+        // Dynamic Semester filter based on selected Tahun Ajaran
+        function updateSemesterFilter(selectedTA) {
+            const semesterSelect = document.getElementById('semester');
+            if (!semesterSelect) return;
+
+            const options = semesterSelect.querySelectorAll('option');
+            options.forEach(opt => {
+                if (!opt.value) {
+                    opt.style.display = 'block';
+                    return;
+                }
+                const taId = opt.getAttribute('data-ta');
+                if (!selectedTA || taId === selectedTA) {
+                    opt.style.display = 'block';
+                } else {
+                    opt.style.display = 'none';
+                    if (opt.selected) {
+                        semesterSelect.value = '';
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const taSelect = document.getElementById('tahun_ajaran');
+            if (taSelect && taSelect.value) {
+                updateSemesterFilter(taSelect.value);
+            }
         });
     </script>
 @endpush

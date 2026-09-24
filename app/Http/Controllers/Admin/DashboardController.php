@@ -16,14 +16,16 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Tahun ajaran aktif
+        $tahunAjaranAktif = TahunAjaran::with(['activeSemester', 'semesters'])->where('is_active', 1)->first();
+        $activeSemester = $tahunAjaranAktif?->activeSemester;
+
         // Statistik utama
-        $totalSiswa = Siswa::count();
+        $totalSiswa = Siswa::aktif()->count();
+        $totalSiswaSemesterAktif = $activeSemester ? Siswa::aktif()->forSemester($activeSemester)->count() : $totalSiswa;
         $totalKelas = Kelas::count();
         $totalKriteria = Kriteria::count();
         $totalPengguna = User::count();
-
-        // Tahun ajaran aktif
-        $tahunAjaranAktif = TahunAjaran::where('is_active', 1)->first();
 
         // Statistik penilaian pada tahun ajaran aktif
         $siswadinilai = 0;
@@ -34,14 +36,20 @@ class DashboardController extends Controller
         if ($tahunAjaranAktif) {
             $kriteriaCount = Kriteria::count();
 
-            // Siswa yang sudah dinilai lengkap
-            $siswadinilai = Penilaian::select('id_siswa')
-                ->where('id_ta', $tahunAjaranAktif->id_ta)
+            // Siswa yang sudah dinilai lengkap di TA & semester aktif
+            $siswadinilaiQuery = Penilaian::select('id_siswa')
+                ->where('id_ta', $tahunAjaranAktif->id_ta);
+
+            if ($activeSemester) {
+                $siswadinilaiQuery->where('id_semester', $activeSemester->id_semester);
+            }
+
+            $siswadinilai = $siswadinilaiQuery
                 ->groupBy('id_siswa')
                 ->havingRaw('COUNT(DISTINCT id_kriteria) = ?', [$kriteriaCount])
                 ->count();
 
-            $siswaBelumDinilai = $totalSiswa - $siswadinilai;
+            $siswaBelumDinilai = max(0, $totalSiswaSemesterAktif - $siswadinilai);
 
             // Total pelanggaran di TA aktif
             $totalPelanggaran = RiwayatPelanggaran::where('id_ta', $tahunAjaranAktif->id_ta)->count();
@@ -95,6 +103,8 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', compact(
             'totalSiswa',
+            'totalSiswaSemesterAktif',
+            'activeSemester',
             'totalKelas',
             'totalKriteria',
             'totalPengguna',

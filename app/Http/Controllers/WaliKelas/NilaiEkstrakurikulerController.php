@@ -57,6 +57,7 @@ class NilaiEkstrakurikulerController extends Controller
             }])
                 ->where('id_kelas', $kelas->id_kelas)
                 ->where('id_ta', $filterTA)
+                ->forSemester($filterSemester)
                 ->orderBy('nama_siswa')
                 ->get();
         }
@@ -97,10 +98,12 @@ class NilaiEkstrakurikulerController extends Controller
         $siswaList = collect();
 
         if ($selectedTA) {
-            $siswaList = Siswa::where('id_kelas', $kelas->id_kelas)
-                ->where('id_ta', $selectedTA)
-                ->orderBy('nama_siswa')
-                ->get();
+            $siswaQuery = Siswa::where('id_kelas', $kelas->id_kelas)
+                ->where('id_ta', $selectedTA);
+            if ($selectedSemester) {
+                $siswaQuery->forSemester($selectedSemester);
+            }
+            $siswaList = $siswaQuery->orderBy('nama_siswa')->get();
         }
 
         return view('walikelas.nilaiekstrakurikuler.create', compact(

@@ -21,13 +21,14 @@ class TahunAjaranController extends Controller
             ->pluck('id_ta');
 
         $tahunAjaran = TahunAjaran::query()
-            ->with(['semesters', 'activeSemester'])
+            ->with(['semesters', 'activeSemester', 'siswa.semester'])
             ->whereIn('id_ta', $representativeIds)
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('tahun_ajaran', 'like', "%{$search}%")
                         ->orWhereHas('semesters', function ($semesterQuery) use ($search) {
-                            $semesterQuery->where('nama_semester', 'like', "%{$search}%");
+                            $semesterQuery->where('nama_semester', 'like', "%{$search}%")
+                                ->orWhere('periode_bulan', 'like', "%{$search}%");
                         });
                 });
             })
@@ -85,7 +86,7 @@ class TahunAjaranController extends Controller
      */
     public function show(TahunAjaran $tahunajaran)
     {
-        $tahunajaran->load('siswa', 'penilaian', 'semesters', 'activeSemester');
+        $tahunajaran->load('siswa.semester', 'penilaian', 'semesters', 'activeSemester');
         return view('admin.tahunajaran.show', compact('tahunajaran'));
     }
 
