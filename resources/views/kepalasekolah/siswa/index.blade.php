@@ -31,7 +31,7 @@
                         <select class="form-select" name="semester" id="filter_semester">
                             <option value="">Semua Semester</option>
                             @foreach ($semesterList as $s)
-                                <option value="{{ $s->id_semester }}" data-ta="{{ $s->id_ta }}" {{ ($filterSemester ?? '') == $s->id_semester ? 'selected' : '' }}>
+                                <option value="{{ $s->id_semester }}" data-id-ta="{{ $s->id_ta }}" data-ta="{{ $s->id_ta }}" {{ ($filterSemester ?? '') == $s->id_semester ? 'selected' : '' }}>
                                     {{ $s->nama_semester }} ({{ $s->periode_bulan }})
                                 </option>
                             @endforeach
@@ -176,28 +176,3 @@
         </div>
     </div>
 @endsection
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const taSelect = document.getElementById('filter_ta');
-        const semesterSelect = document.getElementById('filter_semester');
-        if (taSelect && semesterSelect) {
-            const allSemesterOptions = Array.from(semesterSelect.querySelectorAll('option')).slice(1);
-            function updateSemesterOptions() {
-                const selectedTa = taSelect.value;
-                const currentVal = semesterSelect.value;
-                semesterSelect.innerHTML = '<option value="">Semua Semester</option>';
-                allSemesterOptions.forEach(opt => {
-                    if (!selectedTa || opt.getAttribute('data-ta') === selectedTa) {
-                        const newOpt = opt.cloneNode(true);
-                        if (newOpt.value === currentVal) newOpt.selected = true;
-                        semesterSelect.appendChild(newOpt);
-                    }
-                });
-            }
-            taSelect.addEventListener('change', updateSemesterOptions);
-        }
-    });
-</script>
-@endpush

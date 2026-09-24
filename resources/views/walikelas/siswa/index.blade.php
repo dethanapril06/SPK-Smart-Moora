@@ -26,7 +26,7 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-3">
                             <label class="form-label" for="tahun_ajaran">Tahun Ajaran</label>
-                            <select name="tahun_ajaran" id="tahun_ajaran" class="form-select" onchange="updateSemesterFilter(this.value)">
+                            <select name="tahun_ajaran" id="tahun_ajaran" class="form-select">
                                 <option value="">Semua Tahun Ajaran</option>
                                 @foreach ($tahunAjaranList as $ta)
                                     <option value="{{ $ta->id_ta }}" {{ $filterTA == $ta->id_ta ? 'selected' : '' }}>
@@ -40,7 +40,7 @@
                             <select name="semester" id="semester" class="form-select">
                                 <option value="">Semua Semester</option>
                                 @foreach ($semesterList as $sem)
-                                    <option value="{{ $sem->id_semester }}" data-ta="{{ $sem->id_ta }}"
+                                    <option value="{{ $sem->id_semester }}" data-id-ta="{{ $sem->id_ta }}" data-ta="{{ $sem->id_ta }}"
                                         {{ $filterSemester == $sem->id_semester ? 'selected' : '' }}>
                                         {{ $sem->nama_semester }} ({{ $sem->periode_bulan }}) {{ $sem->is_active ? '(Aktif)' : '' }}
                                     </option>
@@ -261,36 +261,6 @@
                     }
                 });
             });
-        });
-
-        // Dynamic Semester filter based on selected Tahun Ajaran
-        function updateSemesterFilter(selectedTA) {
-            const semesterSelect = document.getElementById('semester');
-            if (!semesterSelect) return;
-
-            const options = semesterSelect.querySelectorAll('option');
-            options.forEach(opt => {
-                if (!opt.value) {
-                    opt.style.display = 'block';
-                    return;
-                }
-                const taId = opt.getAttribute('data-ta');
-                if (!selectedTA || taId === selectedTA) {
-                    opt.style.display = 'block';
-                } else {
-                    opt.style.display = 'none';
-                    if (opt.selected) {
-                        semesterSelect.value = '';
-                    }
-                }
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const taSelect = document.getElementById('tahun_ajaran');
-            if (taSelect && taSelect.value) {
-                updateSemesterFilter(taSelect.value);
-            }
         });
     </script>
 @endpush

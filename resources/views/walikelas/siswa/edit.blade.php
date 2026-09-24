@@ -83,7 +83,7 @@
                                 <label class="form-label" for="id_ta">Tahun Ajaran <span class="text-danger">*</span></label>
                                 <div class="input-group input-group-merge">
                                     <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-                                    <select id="id_ta" name="id_ta" class="form-select @error('id_ta') is-invalid @enderror" onchange="filterSemesterOptions(this.value)">
+                                    <select id="id_ta" name="id_ta" class="form-select @error('id_ta') is-invalid @enderror">
                                         <option value="">Pilih Tahun Ajaran</option>
                                         @foreach ($tahunAjaran as $ta)
                                             <option value="{{ $ta->id_ta }}"
@@ -107,7 +107,7 @@
                                     <select id="id_semester" name="id_semester" class="form-select @error('id_semester') is-invalid @enderror">
                                         <option value="">Pilih Semester</option>
                                         @foreach ($semesters as $sem)
-                                            <option value="{{ $sem->id_semester }}" data-ta="{{ $sem->id_ta }}"
+                                            <option value="{{ $sem->id_semester }}" data-id-ta="{{ $sem->id_ta }}" data-ta="{{ $sem->id_ta }}"
                                                 {{ old('id_semester', $siswa->id_semester) == $sem->id_semester ? 'selected' : '' }}>
                                                 {{ $sem->nama_semester }} ({{ $sem->periode_bulan }})
                                                 @if ($sem->is_active)
@@ -148,49 +148,4 @@
             </div>
         </div>
     </div>
-
-    @push('scripts')
-        <script>
-            function filterSemesterOptions(selectedTA) {
-                const semesterSelect = document.getElementById('id_semester');
-                if (!semesterSelect) return;
-
-                const options = semesterSelect.querySelectorAll('option');
-                let hasValidSelection = false;
-
-                options.forEach(opt => {
-                    if (!opt.value) {
-                        opt.style.display = 'block';
-                        return;
-                    }
-                    const taId = opt.getAttribute('data-ta');
-                    if (!selectedTA || taId === selectedTA) {
-                        opt.style.display = 'block';
-                        if (opt.selected) {
-                            hasValidSelection = true;
-                        }
-                    } else {
-                        opt.style.display = 'none';
-                        if (opt.selected) {
-                            opt.selected = false;
-                        }
-                    }
-                });
-
-                if (!hasValidSelection) {
-                    const firstVisible = Array.from(options).find(opt => opt.value && opt.style.display !== 'none');
-                    if (firstVisible) {
-                        firstVisible.selected = true;
-                    }
-                }
-            }
-
-            document.addEventListener('DOMContentLoaded', function() {
-                const taSelect = document.getElementById('id_ta');
-                if (taSelect && taSelect.value) {
-                    filterSemesterOptions(taSelect.value);
-                }
-            });
-        </script>
-    @endpush
 @endsection

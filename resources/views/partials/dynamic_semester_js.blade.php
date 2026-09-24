@@ -3,15 +3,24 @@ document.addEventListener('DOMContentLoaded', function() {
     function initDynamicSemesterDropdown(taSelect, semSelect) {
         if (!taSelect || !semSelect) return;
 
+        // Remember initial placeholder text
+        if (!semSelect._firstOptionText) {
+            const firstOpt = semSelect.querySelector('option[value=""]');
+            semSelect._firstOptionText = firstOpt ? firstOpt.textContent.trim() : 'Pilih Semester';
+        }
+
         // Store original options if not stored yet
         if (!semSelect._allOptions) {
             semSelect._allOptions = [];
             Array.from(semSelect.options).forEach(opt => {
                 if (opt.value !== '') {
+                    const idTa = opt.getAttribute('data-id-ta') 
+                              || opt.getAttribute('data-ta') 
+                              || (opt.dataset ? (opt.dataset.idTa || opt.dataset.ta) : null);
                     semSelect._allOptions.push({
                         value: opt.value,
-                        text: opt.text.trim(),
-                        idTa: opt.getAttribute('data-id-ta') || opt.dataset.idTa,
+                        text: opt.textContent.trim(),
+                        idTa: idTa ? String(idTa).trim() : '',
                         selected: opt.selected || opt.hasAttribute('selected')
                     });
                 }
@@ -19,31 +28,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function filterSem() {
-            const selectedTa = taSelect.value;
-            const currentSem = semSelect.value || semSelect.getAttribute('data-selected') || '';
-            
-            semSelect.innerHTML = '<option value="">-- Pilih Semester --</option>';
+            const selectedTa = String(taSelect.value || '').trim();
+            const currentSem = String(semSelect.value || semSelect.getAttribute('data-selected') || '').trim();
+            const placeholder = semSelect._firstOptionText || 'Pilih Semester';
+            const isFilter = placeholder.toLowerCase().includes('semua');
+
+            semSelect.innerHTML = '';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = placeholder;
+            semSelect.appendChild(defaultOpt);
 
             if (!selectedTa) {
-                semSelect.disabled = true;
-                semSelect.value = '';
+                if (isFilter) {
+                    semSelect.disabled = false;
+                    semSelect._allOptions.forEach(o => {
+                        const opt = document.createElement('option');
+                        opt.value = o.value;
+                        opt.textContent = o.text;
+                        opt.setAttribute('data-id-ta', o.idTa);
+                        opt.setAttribute('data-ta', o.idTa);
+                        if (String(o.value) === currentSem) {
+                            opt.selected = true;
+                        }
+                        semSelect.appendChild(opt);
+                    });
+                } else {
+                    semSelect.disabled = false;
+                    defaultOpt.textContent = '-- Pilih Tahun Ajaran Terlebih Dahulu --';
+                }
             } else {
                 semSelect.disabled = false;
-                const validOpts = semSelect._allOptions.filter(o => o.idTa == selectedTa);
+                const validOpts = semSelect._allOptions.filter(o => o.idTa === selectedTa || !o.idTa);
+                
+                let matchedSelected = false;
                 validOpts.forEach(o => {
                     const opt = document.createElement('option');
                     opt.value = o.value;
                     opt.textContent = o.text;
                     opt.setAttribute('data-id-ta', o.idTa);
-                    if (o.value == currentSem || (currentSem === '' && o.selected)) {
+                    opt.setAttribute('data-ta', o.idTa);
+                    
+                    if (String(o.value) === currentSem) {
                         opt.selected = true;
+                        matchedSelected = true;
+                    } else if (!matchedSelected && currentSem === '' && o.selected) {
+                        opt.selected = true;
+                        matchedSelected = true;
                     }
                     semSelect.appendChild(opt);
                 });
-                
-                // If after populating, current selection is invalid for this TA, clear value
-                if (!semSelect.value && currentSem) {
-                    semSelect.value = '';
+
+                // If nothing was selected and we have valid options in a non-filter form (form create/edit),
+                // auto-select the active or first option so user always has a valid selection
+                if (!matchedSelected && !isFilter && validOpts.length > 0) {
+                    const activeOpt = validOpts.find(o => o.selected) || validOpts[0];
+                    if (activeOpt) {
+                        semSelect.value = activeOpt.value;
+                    }
                 }
             }
         }
@@ -65,10 +107,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (semSelect) initDynamicSemesterDropdown(taSelect, semSelect);
         });
 
-        // 2. By form pairing (name="tahun_ajaran" paired with name="semester", or name="id_ta" paired with name="id_semester")
+        // 2. By form pairing (name="tahun_ajaran" / name="ta" paired with name="semester", or name="id_ta" paired with name="id_semester")
         document.querySelectorAll('form').forEach(form => {
-            const taFilter = form.querySelector('select[name="tahun_ajaran"]');
-            const semFilter = form.querySelector('select[name="semester"]');
+            const taFilter = form.querySelector('select[name="tahun_ajaran"], select[name="ta"], select#filter_ta');
+            const semFilter = form.querySelector('select[name="semester"], select#filter_semester');
             if (taFilter && semFilter) initDynamicSemesterDropdown(taFilter, semFilter);
 
             const taInput = form.querySelector('select[name="id_ta"]');
@@ -76,10 +118,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (taInput && semInput) initDynamicSemesterDropdown(taInput, semInput);
         });
 
-        // 3. By ID pairing outside form or in modals (#tahun_ajaran / #semester, #swal-ta / #swal-sem)
+        // 3. By ID pairing outside form or in modals (#tahun_ajaran / #semester, #filter_ta / #filter_semester, #swal-ta / #swal-sem)
         const taById = document.getElementById('tahun_ajaran');
         const semById = document.getElementById('semester');
         if (taById && semById) initDynamicSemesterDropdown(taById, semById);
+
+        const filterTaById = document.getElementById('filter_ta');
+        const filterSemById = document.getElementById('filter_semester');
+        if (filterTaById && filterSemById) initDynamicSemesterDropdown(filterTaById, filterSemById);
 
         const swalTa = document.getElementById('swal-ta');
         const swalSem = document.getElementById('swal-sem');
