@@ -342,7 +342,8 @@ class KelasController extends Controller
     {
         $waliKelas = User::where('level', 'Wali Kelas')->get();
         $mataPelajaran = MataPelajaran::orderBy('nama_mapel')->get();
-        return view('admin.kelas.edit', compact('kela', 'waliKelas', 'mataPelajaran'));
+        $jumlahSiswa = $kela->siswa()->count();
+        return view('admin.kelas.edit', compact('kela', 'waliKelas', 'mataPelajaran', 'jumlahSiswa'));
     }
 
     /**
@@ -350,15 +351,19 @@ class KelasController extends Controller
      */
     public function update(Request $request, Kelas $kela)
     {
+        $jumlahSiswa = $kela->siswa()->count();
+
         $validated = $request->validate([
             'nama_kelas' => 'required|string|max:255',
             'id_wali_kelas' => 'nullable|exists:users,id',
-            'kapasitas' => 'nullable|integer|min:0',
+            'kapasitas' => ['nullable', 'integer', 'min:' . $jumlahSiswa],
         ], [
             'nama_kelas.required' => 'Nama kelas wajib diisi.',
             'id_wali_kelas.exists' => 'Wali kelas tidak valid.',
             'kapasitas.integer' => 'Kapasitas harus berupa angka.',
-            'kapasitas.min' => 'Kapasitas minimal 0.',
+            'kapasitas.min' => $jumlahSiswa > 0
+                ? "Kapasitas kelas tidak boleh kurang dari jumlah siswa yang ada saat ini ({$jumlahSiswa} siswa)."
+                : 'Kapasitas minimal 0.',
         ]);
 
         $kela->update([
